@@ -35,22 +35,32 @@ class PipeManiaState:
 class Board:
     """Representação interna de um tabuleiro de PipeMania."""
 
+    def is_grid_index(self, row: int, col: int) -> bool:
+        """Devolve True se a posição do tabuleiro é válida, False caso contrário."""
+        return 0 <= row < len(self.grid) and 0 <= col < len(self.grid[0])
+
     def get_value(self, row: int, col: int) -> str:
         """Devolve o valor na respetiva posição do tabuleiro."""
-        # TODO
-        pass
+        if self.is_grid_index(row, col):
+            return self.grid[row][col]
+        else:
+            return None
 
     def adjacent_vertical_values(self, row: int, col: int) -> (str, str):
         """Devolve os valores imediatamente acima e abaixo,
         respectivamente."""
-        # TODO
-        pass
+        if self.is_grid_index(row, col):
+            return self.get_value(row - 1, col), self.get_value(row + 1, col)
+        else:
+            return None
 
     def adjacent_horizontal_values(self, row: int, col: int) -> (str, str):
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
-        # TODO
-        pass
+        if self.is_grid_index(row, col):
+            return self.get_value(row, col - 1), self.get_value(row, col + 1)
+        else:
+            return None
 
     @staticmethod
     def parse_instance():
