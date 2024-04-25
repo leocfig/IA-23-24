@@ -65,16 +65,20 @@ class Board:
     @staticmethod
     def parse_instance():
         """Lê o test do standard input (stdin) que é passado como argumento
-        e retorna uma instância da classe Board.
+        e retorna uma instância da classe Board."""
 
-        Por exemplo:
-            $ python3 pipe.py < test-01.txt
-
-            > from sys import stdin
-            > line = stdin.readline().split()
-        """
-        # TODO
-        pass
+        grid = []
+        first_line = sys.stdin.readline().split() # Lê a primeira linha para obter o tamanho da grelha
+        n = len(first_line)
+        grid.append(first_line)  # Adiciona a primeira linha à grelha
+        for _ in range(n-1):     # Assegura que o input é n x n
+            row = sys.stdin.readline().split()
+            grid.append(row)
+        return Board(grid)
+    
+    def print_grid(board):
+        for row in board.grid:
+            print(' '.join(row))
 
     # TODO: outros metodos da classe
 
@@ -116,6 +120,10 @@ class PipeMania(Problem):
 
 if __name__ == "__main__":
     # TODO:
+
+    board = Board.parse_instance()
+    board.print_grid()
+
     # Ler o ficheiro do standard input,
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
