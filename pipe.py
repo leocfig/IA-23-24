@@ -35,6 +35,10 @@ class PipeManiaState:
 class Board:
     """Representação interna de um tabuleiro de PipeMania."""
 
+    def __init__(self, grid):
+        """Cria um objeto Board que contém uma grelha n x n."""
+        self.grid = grid
+
     def is_grid_index(self, row: int, col: int) -> bool:
         """Devolve True se a posição do tabuleiro é válida, False caso contrário."""
         return 0 <= row < len(self.grid) and 0 <= col < len(self.grid[0])
@@ -52,7 +56,7 @@ class Board:
         if self.is_grid_index(row, col):
             return self.get_value(row - 1, col), self.get_value(row + 1, col)
         else:
-            return None
+            return None # ou temos de pôr (None, None) ? caso a peça não exista
 
     def adjacent_horizontal_values(self, row: int, col: int) -> (str, str):
         """Devolve os valores imediatamente à esquerda e à direita,
@@ -60,7 +64,7 @@ class Board:
         if self.is_grid_index(row, col):
             return self.get_value(row, col - 1), self.get_value(row, col + 1)
         else:
-            return None
+            return None # ou temos de pôr (None, None) ? caso a peça não exista
 
     @staticmethod
     def parse_instance():
@@ -123,6 +127,17 @@ if __name__ == "__main__":
 
     board = Board.parse_instance()
     board.print_grid()
+
+    print(board.adjacent_vertical_values(0, 0))
+    print(board.adjacent_horizontal_values(0, 0))
+
+    print(board.adjacent_vertical_values(1, 1))
+    print(board.adjacent_horizontal_values(1, 1))
+
+    print(board.adjacent_horizontal_values(2, 3))
+    print(board.adjacent_horizontal_values(2, 2))
+
+    
 
     # Ler o ficheiro do standard input,
     # Usar uma técnica de procura para resolver a instância,
