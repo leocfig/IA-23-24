@@ -80,8 +80,8 @@ class Board:
             grid.append(row)
         return Board(grid)
     
-    def print_grid(board):
-        for row in board.grid:
+    def print_grid(self):
+        for row in self.grid:
             print(' '.join(row))
 
     # TODO: outros metodos da classe
