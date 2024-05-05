@@ -51,19 +51,49 @@ class PipeManiaState:
 
         rotation_mappings_first_row_last_col = {'C': ['B', 'E'], 'E': ['B'], 'B': ['E'], 'D': ['B', 'E']}
 
+        rotation_mappings_not_first_last_row_first_col = {
+            'F': {'C': ['B', 'D'], 'E': ['B', 'C', 'D'], 'B': ['C', 'D'], 'D': ['B', 'C']},
+            'V': {'C': ['B', 'D'], 'E': ['B', 'D'], 'B': ['E'], 'D': ['B']}
+        }
+
+        rotation_mappings_last_row_first_col = {'C': ['B'], 'E': ['C', 'D'], 'B': ['C', 'D'], 'D': ['C']}
+
+        rotation_mappings_not_first_last_row_last_col = {
+            'F': {'C': ['B', 'E'], 'E': ['B', 'C'], 'B': ['C', 'E'], 'D': ['B', 'C', 'E']},
+            'V': {'C': ['E'], 'E': ['C'], 'B': ['C', 'E'], 'D': ['C', 'E']}
+        }
+
+        rotation_mappings_last_row_last_col = {'C': ['E'], 'E': ['C'], 'B': ['C', 'E'], 'D': ['C', 'E']}
+
+
         for row in range(len(self.board.grid)):
             for col in range(len(self.board.grid[0])):
                 piece = self.board.get_value(row, col)
 
-                if row == 0 and col == 0:
+                if row == 0 and col == 0 and piece[0] == "F":
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_first_row_first_col[piece[1]]])
                 elif row == 0 and col != 0 and col != board_dim - 1:
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_first_row_not_first_last_col[piece[0]][piece[1]]])
-                elif row == 0 and col == board_dim - 1:
+                elif row == 0 and col == board_dim - 1 and piece[0] == "F":
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_first_row_last_col[piece[1]]])
+                elif row != 0 and row != board_dim - 1 and col == 0:
+                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                                            for new_orientation in rotation_mappings_not_first_last_row_first_col[piece[0]][piece[1]]])
+                elif row == board_dim - 1 and col == 0 and piece[0] == "F":
+                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                                            for new_orientation in rotation_mappings_last_row_first_col[piece[1]]])
+                elif row != 0 and col == board_dim - 1:
+                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                                            for new_orientation in rotation_mappings_not_first_last_row_last_col[piece[0]][piece[1]]])
+                elif row == board_dim - 1 and col == board_dim - 1 and piece[0] == "F":
+                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                                            for new_orientation in rotation_mappings_last_row_last_col[piece[1]]])
+                else:   #Falta pôr os casos em que isto tem de ignorar
+                    # Handle the case where the piece is not on any border
+                    possible_actions.extend([(row, col, rotation) for rotation in range(1, 4)])  # Add 3 possible rotations
 
         return possible_actions
 
