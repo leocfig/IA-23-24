@@ -27,7 +27,7 @@ class PipeManiaState:
         PipeManiaState.state_id += 1
 
     def get_board(self):
-        """Returns the board."""
+        """Retorna o tabuleiro."""
         return self.board
 
     def __lt__(self, other):
@@ -37,7 +37,7 @@ class PipeManiaState:
         """Método para verificar se dois estados são iguais."""
         return isinstance(other, PipeManiaState) and self.board == other.board
 
-    def generate_actions(self):
+    def generate_actions(self) -> List[Tuple[int, int, int]]:
         """Faz uma interpretação do estado atual do tabuleiro e gera ações possíveis."""
 
         possible_actions = []
@@ -110,6 +110,10 @@ class Board:
         """Cria um objeto Board que contém uma grelha n x n."""
         self.grid = grid
 
+    def copy(self):
+        """Cria uma cópia do tabuleiro."""
+        return deepcopy(self.grid)
+
     def is_grid_index(self, row: int, col: int) -> bool:
         """Devolve True se a posição do tabuleiro é válida, False caso contrário."""
         return 0 <= row < len(self.grid) and 0 <= col < len(self.grid[0])
@@ -178,6 +182,15 @@ class Board:
             self.turn_left(row, col)
             piece = self.get_value(row, col)
             current_orientation = piece[1]
+
+    def rotate_piece(self, row: int, col: int, rotation: int):
+        """Roda a peça na determinada posição com base no valor da rotação."""
+        if rotation == 1:
+            self.turn_left(row, col)
+        elif rotation == 2:
+            self.turn_180(row, col)
+        elif rotation == 3:
+            self.turn_right(row, col)
 
 
     def turn_left(self, row: int, col: int):
@@ -289,19 +302,33 @@ class PipeMania(Problem):
 
 
 
-    def actions(self, state: PipeManiaState):
+    def actions(self, state: PipeManiaState) -> List[Tuple[int, int, int]]:
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
+
+        return state.generate_actions()
+
         # TODO
-        pass
+        
 
     def result(self, state: PipeManiaState, action):
         """Retorna o estado resultante de executar a 'action' sobre
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
+
+        if action in self.actions(state):
+
+            current_board = state.get_board()
+            row, col, rotation = action
+            new_board = current_board.copy()
+            new_board.rotate_piece(row, col, rotation)
+
+            new_state = PipeManiaState(new_board)
+            
+            return new_state
+
         # TODO
-        pass
 
     def goal_test(self, state: PipeManiaState):
         """Retorna True se e só se o estado passado como argumento é
