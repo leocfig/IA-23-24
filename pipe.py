@@ -3,8 +3,8 @@
 # Além das funções e classes sugeridas, podem acrescentar outras que considerem pertinentes.
 
 # Grupo 57:
-# 00000 Nome1
-# 00000 Nome2
+# 106157 Leonor Costa Figueira
+# 106322 Raquel dos Anjos Santos Caldeira Rodrigues
 
 import sys
 from search import (
@@ -65,69 +65,6 @@ class PipeManiaState:
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_first_row_last_col[piece[1]]])
 
-        return possible_actions
-
-
-    def generate_actions(self) -> List[Tuple[int, int, int]]:
-        """Faz uma interpretação do estado atual do tabuleiro e gera ações possíveis."""
-
-        possible_actions = []
-        board_dim = len(self.board.grid)
-
-        for row in range(len(self.board.grid)):
-            for col in range(len(self.board.grid[0])):
-
-                piece = self.board.get_value(row, col)
-
-                if row == 0 and col == 0 and piece[0] == "F":
-                    if piece[1] == "C" or piece[1] == "E":
-                        possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B")),
-                                                (row, col, self.board.calculate_rotation(piece[1], "D"))])
-                    elif piece[1] == "B":
-                        possible_actions.append((row, col, self.board.calculate_rotation("B", "D")))
-                    elif piece[1] == "D":
-                        possible_actions.append((row, col, self.board.calculate_rotation("D", "B")))
-
-                elif row == 0 and col != 0 and col != board_dim-1:
-
-                    if piece[0] == "F":
-                        if piece[1] == "C":
-                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B")),
-                                                    (row, col, self.board.calculate_rotation(piece[1], "E")),
-                                                    (row, col, self.board.calculate_rotation(piece[1], "D"))])
-                        elif piece[1] == "B":
-                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "E")),
-                                                    (row, col, self.board.calculate_rotation(piece[1], "D"))])
-                        elif piece[1] == "E":
-                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B")),
-                                                    (row, col, self.board.calculate_rotation(piece[1], "D"))])
-                        elif piece[1] == "D":
-                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B")),
-                                                    (row, col, self.board.calculate_rotation(piece[1], "E"))])
-
-                    elif piece[0] == "V":
-                        if piece[1] == "C" or piece[1] == "D":
-                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B")),
-                                                    (row, col, self.board.calculate_rotation(piece[1], "E"))])
-                        elif piece[1] == "B":
-                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "E"))])
-
-                        elif piece[1] == "E":
-                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B"))])
-                         
-                elif row == 0 and col == board_dim-1 and piece[0] == "F":
-                    if piece[1] == "C" or piece[1] == "D":
-                        possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B")),
-                                                (row, col, self.board.calculate_rotation(piece[1], "E"))])
-                    elif piece[1] == "B":
-                        possible_actions.append((row, col, self.board.calculate_rotation("B", "E")))
-                    elif piece[1] == "E":
-                        possible_actions.append((row, col, self.board.calculate_rotation("E", "B")))
-                    
-
-
-
-        
         return possible_actions
 
 
