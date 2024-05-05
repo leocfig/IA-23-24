@@ -2,7 +2,7 @@
 # Devem alterar as classes e funções neste ficheiro de acordo com as instruções do enunciado.
 # Além das funções e classes sugeridas, podem acrescentar outras que considerem pertinentes.
 
-# Grupo 00:
+# Grupo 57:
 # 00000 Nome1
 # 00000 Nome2
 
@@ -26,8 +26,79 @@ class PipeManiaState:
         self.id = PipeManiaState.state_id
         PipeManiaState.state_id += 1
 
+    def get_board(self):
+        """Returns the board."""
+        return self.board
+
     def __lt__(self, other):
         return self.id < other.id
+
+    def __eq__(self, other):
+        """Método para verificar se dois estados são iguais."""
+        return isinstance(other, PipeManiaState) and self.board == other.board
+
+    def generate_actions(self):
+        """Faz uma interpretação do estado atual do tabuleiro e gera ações possíveis."""
+
+        possible_actions = []
+        board_dim = len(self.board.grid)
+
+        for row in range(len(self.board.grid)):
+            for col in range(len(self.board.grid[0])):
+
+                piece = self.board.get_value(row, col)
+
+                if row == 0 and col == 0 and piece[0] == "F":
+                    if piece[1] == "C" or piece[1] == "E":
+                        possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B")),
+                                                (row, col, self.board.calculate_rotation(piece[1], "D"))])
+                    elif piece[1] == "B":
+                        possible_actions.append((row, col, self.board.calculate_rotation("B", "D")))
+                    elif piece[1] == "D":
+                        possible_actions.append((row, col, self.board.calculate_rotation("D", "B")))
+
+                elif row == 0 and col != 0 and col != board_dim-1:
+
+                    if piece[0] == "F":
+                        if piece[1] == "C":
+                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B")),
+                                                    (row, col, self.board.calculate_rotation(piece[1], "E")),
+                                                    (row, col, self.board.calculate_rotation(piece[1], "D"))])
+                        elif piece[1] == "B":
+                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "E")),
+                                                    (row, col, self.board.calculate_rotation(piece[1], "D"))])
+                        elif piece[1] == "E":
+                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B")),
+                                                    (row, col, self.board.calculate_rotation(piece[1], "D"))])
+                        elif piece[1] == "D":
+                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B")),
+                                                    (row, col, self.board.calculate_rotation(piece[1], "E"))])
+
+                    elif piece[0] == "V":
+                        if piece[1] == "C" or piece[1] == "D":
+                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B")),
+                                                    (row, col, self.board.calculate_rotation(piece[1], "E"))])
+                        elif piece[1] == "B":
+                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "E"))])
+
+                        elif piece[1] == "E":
+                            possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B"))])
+                         
+                elif row == 0 and col == board_dim-1 and piece[0] == "F":
+                    if piece[1] == "C" or piece[1] == "D":
+                        possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], "B")),
+                                                (row, col, self.board.calculate_rotation(piece[1], "E"))])
+                    elif piece[1] == "B":
+                        possible_actions.append((row, col, self.board.calculate_rotation("B", "E")))
+                    elif piece[1] == "E":
+                        possible_actions.append((row, col, self.board.calculate_rotation("E", "B")))
+                    
+
+
+
+        
+        return possible_actions
+
 
     # TODO: outros metodos da classe
 
@@ -42,6 +113,11 @@ class Board:
     def is_grid_index(self, row: int, col: int) -> bool:
         """Devolve True se a posição do tabuleiro é válida, False caso contrário."""
         return 0 <= row < len(self.grid) and 0 <= col < len(self.grid[0])
+
+    def set_value(self, row: int, col: int, value: str):
+        """Define o valor na posição especificada do tabuleiro."""
+        if self.is_grid_index(row, col):
+            self.grid[row][col] = value
 
     def get_value(self, row: int, col: int) -> str:
         """Devolve o valor na respetiva posição do tabuleiro."""
@@ -78,7 +154,55 @@ class Board:
         for _ in range(n-1):     # Assegura que o input é n x n
             row = sys.stdin.readline().split()
             grid.append(row)
+
         return Board(grid)
+
+
+    def calculate_rotation(start_orient: str, end_orient: str) -> int:
+        # Mudar comentário para português
+        """Calculate the number of anticlockwise rotations needed to transition from start_orient to end_orient."""
+        orientations = ['C', 'B', 'E', 'D', 'H', 'V']
+        start_index = orientations.index(start_orient)
+        end_index = orientations.index(end_orient)
+        anticlockwise_rotations = (start_index - end_index) % len(orientations)
+        return anticlockwise_rotations
+    
+    def rotate_piece_to_config(self, row: int, col: int, desired_config: str):
+        """Rotaciona a peça na posição (row, col) até que sua configuração seja igual à configuração desejada."""
+        piece = self.get_value(row, col)
+        current_orientation = piece[1]
+        desired_orientation = desired_config[1]
+
+        while current_orientation != desired_orientation:
+            #Roda a peça para a esquerda até chegar à posição desejada
+            self.turn_left(row, col)
+            piece = self.get_value(row, col)
+            current_orientation = piece[1]
+
+
+    def turn_left(self, row: int, col: int):
+        """Roda a peça na determinada posição para a esquerda."""
+        piece = self.get_value(row, col)
+        orientations = {'C': 'E', 'E': 'B', 'B': 'D', 'D': 'C', 'H': 'V', 'V': 'H'}
+        new_orientation = orientations[piece[1]]
+        self.set_value(row, col, piece[0] + new_orientation)
+
+    def turn_right(self, row: int, col: int):
+        """Roda a peça na determinada posição para a direita."""
+        piece = self.get_value(row, col)
+        orientations = {'C': 'D', 'D': 'B', 'B': 'E', 'E': 'C', 'H': 'V', 'V': 'H'}
+        new_orientation = orientations[piece[1]]
+        self.set_value(row, col, piece[0] + new_orientation)
+
+    def turn_180(self, row: int, col: int):
+        """Roda a peça na determinada posição 180 graus."""
+        piece = self.get_value(row, col)
+        orientations = {'C': 'B', 'B': 'C', 'E': 'D', 'D': 'E', 'H': 'V', 'V': 'H'}
+        new_orientation = orientations[piece[1]]
+        self.set_value(row, col, piece[0] + new_orientation)
+
+    
+    
     
     def print_grid(self):
         for row in self.grid:
@@ -88,10 +212,82 @@ class Board:
 
 
 class PipeMania(Problem):
+
+    # Pomos @Override???
+
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
+        super().__init__(initial=PipeManiaState(board))
         # TODO
         pass
+
+    def get_initial_state(self):
+        """Devolve o estado inicial."""
+        return self.initial
+    
+    def limit_borders(self):
+        """Faz uma interpretação do estado atual do tabuleiro e faz alterações no limite do tabuleiro."""
+        
+        initial_board = self.get_initial_state().get_board()
+        board_dim = len(initial_board.grid)
+
+        # Percorrer a primeira linha do tabuleiro
+        for col in range(board_dim):
+
+            piece = initial_board.get_value(0, col)
+    
+            if col == 0 and piece[0] == "V" and piece[1] != "B":
+                initial_board.rotate_piece_to_config(0, col, "VB")
+
+            if piece[0] == "B" and piece[1] != "B":
+                initial_board.rotate_piece_to_config(0, col, "BB")
+
+            if piece[0] == "L" and piece[1] != "H":
+                initial_board.rotate_piece_to_config(0, col, "LH")
+
+            if col == board_dim - 1 and piece[0] == "V" and piece[1] != "E":
+                initial_board.rotate_piece_to_config(0, col, "VE")
+
+        # Percorrer a última linha do tabuleiro
+        for col in range(board_dim):
+
+            piece = initial_board.get_value(board_dim-1, col)
+    
+            if col == 0 and piece[0] == "V" and piece[1] != "D":
+                initial_board.rotate_piece_to_config(board_dim-1, col, "VD")
+            
+            if piece[0] == "B" and piece[1] != "C":
+                initial_board.rotate_piece_to_config(board_dim-1, col, "BC")
+
+            if piece[0] == "L" and piece[1] != "H":
+                initial_board.rotate_piece_to_config(board_dim-1, col, "LH")
+
+            if col == board_dim - 1 and piece[0] == "V" and piece[1] != "C":
+                initial_board.rotate_piece_to_config(board_dim-1, col, "VC")
+        
+        # Percorrer a primeira coluna do tabuleiro
+        for row in range(board_dim):
+
+            piece = initial_board.get_value(row, 0)
+
+            if piece[0] == "L" and piece[1] != "V":
+                initial_board.rotate_piece_to_config(row, 0, "LV")
+
+            if piece[0] == "B" and piece[1] != "D":
+                initial_board.rotate_piece_to_config(row, 0, "BD")
+
+        # Percorrer a última coluna do tabuleiro
+        for row in range(board_dim):
+
+            piece = initial_board.get_value(row, board_dim-1)
+
+            if piece[0] == "L" and piece[1] != "V":
+                initial_board.rotate_piece_to_config(row, 0, "LV")
+
+            if piece[0] == "B" and piece[1] != "E":
+                initial_board.rotate_piece_to_config(row, 0, "BE")
+
+
 
     def actions(self, state: PipeManiaState):
         """Retorna uma lista de ações que podem ser executadas a
@@ -126,16 +322,14 @@ if __name__ == "__main__":
     # TODO:
 
     board = Board.parse_instance()
+
+    problem = PipeMania(board)
+    initial_state = PipeManiaState(board)
+
+    problem.limit_borders()
     board.print_grid()
 
-    print(board.adjacent_vertical_values(0, 0))
-    print(board.adjacent_horizontal_values(0, 0))
-
-    print(board.adjacent_vertical_values(1, 1))
-    print(board.adjacent_horizontal_values(1, 1))
-
-    print(board.adjacent_horizontal_values(2, 3))
-    print(board.adjacent_horizontal_values(2, 2))
+    
 
     
 
