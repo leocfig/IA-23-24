@@ -39,6 +39,37 @@ class PipeManiaState:
 
     def generate_actions(self) -> List[Tuple[int, int, int]]:
         """Faz uma interpretação do estado atual do tabuleiro e gera ações possíveis."""
+        possible_actions = []
+        board_dim = len(self.board.grid)
+
+        rotation_mappings_first_row_first_col = {'C': ['B', 'D'], 'E': ['B', 'D'], 'B': ['D'], 'D': ['B']}
+
+        rotation_mappings_first_row_not_first_last_col = {
+            'F': {'C': ['B', 'E', 'D'], 'E': ['B', 'D'], 'B': ['E', 'D'], 'D': ['B', 'E']},
+            'V': {'C': ['B', 'E'], 'E': ['B'], 'B': ['E'], 'D': ['B', 'E']}
+        }
+
+        rotation_mappings_first_row_last_col = {'C': ['B', 'E'], 'E': ['B'], 'B': ['E'], 'D': ['B', 'E']}
+
+        for row in range(len(self.board.grid)):
+            for col in range(len(self.board.grid[0])):
+                piece = self.board.get_value(row, col)
+
+                if row == 0 and col == 0:
+                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                                            for new_orientation in rotation_mappings_first_row_first_col[piece[1]]])
+                elif row == 0 and col != 0 and col != board_dim - 1:
+                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                                            for new_orientation in rotation_mappings_first_row_not_first_last_col[piece[0]][piece[1]]])
+                elif row == 0 and col == board_dim - 1:
+                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                                            for new_orientation in rotation_mappings_first_row_last_col[piece[1]]])
+
+        return possible_actions
+
+
+    def generate_actions(self) -> List[Tuple[int, int, int]]:
+        """Faz uma interpretação do estado atual do tabuleiro e gera ações possíveis."""
 
         possible_actions = []
         board_dim = len(self.board.grid)
