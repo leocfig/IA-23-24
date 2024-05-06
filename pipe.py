@@ -37,10 +37,69 @@ class PipeManiaState:
         """Método para verificar se dois estados são iguais."""
         return isinstance(other, PipeManiaState) and self.board == other.board
 
-    def generate_actions(self) -> List[Tuple[int, int, int]]:
+    def check_neighbors(self, row, col):
+        """Tenta tornar a determinada peça permanente com base se as vizinhas o são."""
+
+        permanent_piece = self.get_board().is_permanent(row, col)
+        if permanent_piece:
+            return
+
+        # Define the indices of the neighboring positions
+        neighbor_indices = [
+            (row - 1, col),  # Above
+            (row + 1, col),  # Below
+            (row, col - 1),  # Left
+            (row, col + 1)   # Right
+        ]
+
+        connections = {
+            'LV': ['up', 'down'],
+            'VB': ['left', 'right'],
+            # Add more connections as needed for other orientations
+        }
+
+        for neighbor_row, neighbor_col in neighbor_indices:
+
+            neighbor_piece = self.get_value(neighbor_row, neighbor_col)
+            neighbor_permanent = self.is_permanent(neighbor_row, neighbor_col)
+            
+            if neighbor_permanent:
+                #TODO
+                pass
+
+
+    def change_neighbors(self):
+        """Faz uma interpretação do tabuleiro e faz alterações
+        em vizinhos de peças permanentes no tabuleiro."""
+        
+        board = self.get_board()
+        board_dim = len(board.grid)
+        nr_iterations = board_dim // 2 if board_dim % 2 == 0 else board_dim // 2 + 1
+
+        for i in range(1, nr_iterations): # Para ignorar a fronteira exterior, essa já foi tratada
+            # Apply to the first row of the current border
+            for col in range(board_dim):
+                self.check_neighbors(i, col)
+
+            # Apply to the last row of the current border               #REPETIDO
+            for col in range(board_dim):
+                self.check_neighbors(board_dim-1-i, col)
+
+            # Apply to the first column of the current border
+            for row in range(board_dim):
+                self.check_neighbors(row, i)
+
+            # Apply to the last column of the current border
+            for row in range(1, board_dim - 1):
+                self.check_neighbors(row, board_dim-1-i)
+
+
+
+    def generate_actions(self):
         """Faz uma interpretação do estado atual do tabuleiro e gera ações possíveis."""
         possible_actions = []
-        board_dim = len(self.board.grid)
+        board = self.get_board()
+        board_dim = len(board.grid)
 
         rotation_mappings_first_row_first_col = {'C': ['B', 'D'], 'E': ['B', 'D'], 'B': ['D'], 'D': ['B']}
 
@@ -70,7 +129,9 @@ class PipeManiaState:
             for col in range(len(self.board.grid[0])):
                 piece = self.board.get_value(row, col)
 
-                if row == 0 and col == 0 and piece[0] == "F":
+                if board.is_permanent(row, col):
+                    pass
+                elif row == 0 and col == 0 and piece[0] == "F":
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_first_row_first_col[piece[1]]])
                 elif row == 0 and col != 0 and col != board_dim - 1:
@@ -92,7 +153,6 @@ class PipeManiaState:
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_last_row_last_col[piece[1]]])
                 else:   #Falta pôr os casos em que isto tem de ignorar
-                    # Handle the case where the piece is not on any border
                     possible_actions.extend([(row, col, rotation) for rotation in range(1, 4)])  # Add 3 possible rotations
 
         return possible_actions
@@ -128,6 +188,16 @@ class Board:
         else:
             return None
 
+    def make_piece_permanent(self, row, col):
+        """Torna a configuração da peça permanente no determinado tabuleiro."""
+        piece = self.get_value(row, col)
+        self.set_value(row, col, piece.lower())  # Converts the piece to lowercase to signal the permanent spot
+
+    def is_permanent(self, row, col):
+        """Verifica se a peça na determinada posição já está na sua configuração permanente."""
+        piece = self.get_value(row, col)
+        return piece.islower()
+
     def adjacent_vertical_values(self, row: int, col: int) -> (str, str):
         """Devolve os valores imediatamente acima e abaixo,
         respectivamente."""
@@ -160,13 +230,16 @@ class Board:
         return Board(grid)
 
 
-    def calculate_rotation(start_orient: str, end_orient: str) -> int:
+    def calculate_rotation(self, start_orient: str, end_orient: str) -> int:
         # Mudar comentário para português
         """Calculate the number of anticlockwise rotations needed to transition from start_orient to end_orient."""
-        orientations = ['C', 'B', 'E', 'D', 'H', 'V']
+        if start_orient in {'H', 'V'}:
+            orientations = ['H', 'V']
+        else:
+            orientations = ['C', 'D', 'B', 'E']
         start_index = orientations.index(start_orient)
         end_index = orientations.index(end_orient)
-        anticlockwise_rotations = (start_index - end_index) % len(orientations)
+        anticlockwise_rotations = (end_index - start_index) % len(orientations)
         return anticlockwise_rotations
     
     def rotate_piece_to_config(self, row: int, col: int, desired_config: str):
@@ -236,7 +309,7 @@ class PipeMania(Problem):
         """Devolve o estado inicial."""
         return self.initial
     
-    def limit_borders(self):
+    def change_borders(self):
         """Faz uma interpretação do estado atual do tabuleiro e faz alterações no limite do tabuleiro."""
         
         initial_board = self.get_initial_state().get_board()
@@ -247,60 +320,87 @@ class PipeMania(Problem):
 
             piece = initial_board.get_value(0, col)
     
-            if col == 0 and piece[0] == "V" and piece[1] != "B":
-                initial_board.rotate_piece_to_config(0, col, "VB")
+            if col == 0 and piece[0] == "V":
+                if piece[1] != "B":
+                    initial_board.rotate_piece_to_config(0, col, "VB")
+                initial_board.make_piece_permanent(0, col)
 
-            if piece[0] == "B" and piece[1] != "B":
-                initial_board.rotate_piece_to_config(0, col, "BB")
+            if piece[0] == "B":
+                if piece[1] != "B":
+                    initial_board.rotate_piece_to_config(0, col, "BB")
+                initial_board.make_piece_permanent(0, col)
 
-            if piece[0] == "L" and piece[1] != "H":
-                initial_board.rotate_piece_to_config(0, col, "LH")
+            if piece[0] == "L":
+                if piece[1] != "H":
+                    initial_board.rotate_piece_to_config(0, col, "LH")
+                initial_board.make_piece_permanent(0, col)
 
-            if col == board_dim - 1 and piece[0] == "V" and piece[1] != "E":
-                initial_board.rotate_piece_to_config(0, col, "VE")
+            if col == board_dim - 1 and piece[0] == "V":
+                if piece[1] != "E":
+                    initial_board.rotate_piece_to_config(0, col, "VE")
+                initial_board.make_piece_permanent(0, col)
 
         # Percorrer a última linha do tabuleiro
         for col in range(board_dim):
 
             piece = initial_board.get_value(board_dim-1, col)
     
-            if col == 0 and piece[0] == "V" and piece[1] != "D":
-                initial_board.rotate_piece_to_config(board_dim-1, col, "VD")
+            if col == 0 and piece[0] == "V":
+                if piece[1] != "D":
+                    initial_board.rotate_piece_to_config(board_dim-1, col, "VD")
+                initial_board.make_piece_permanent(board_dim-1, col)
             
-            if piece[0] == "B" and piece[1] != "C":
-                initial_board.rotate_piece_to_config(board_dim-1, col, "BC")
+            if piece[0] == "B":
+                if piece[1] != "C":
+                    initial_board.rotate_piece_to_config(board_dim-1, col, "BC")
+                initial_board.make_piece_permanent(board_dim-1, col)
 
-            if piece[0] == "L" and piece[1] != "H":
-                initial_board.rotate_piece_to_config(board_dim-1, col, "LH")
+            if piece[0] == "L":
+                if piece[1] != "H":
+                    initial_board.rotate_piece_to_config(board_dim-1, col, "LH")
+                initial_board.make_piece_permanent(board_dim-1, col)
 
-            if col == board_dim - 1 and piece[0] == "V" and piece[1] != "C":
-                initial_board.rotate_piece_to_config(board_dim-1, col, "VC")
+            if col == board_dim - 1 and piece[0] == "V":
+                if piece[1] != "C":
+                    initial_board.rotate_piece_to_config(board_dim-1, col, "VC")
+                initial_board.make_piece_permanent(board_dim-1, col)
         
         # Percorrer a primeira coluna do tabuleiro
         for row in range(board_dim):
 
             piece = initial_board.get_value(row, 0)
 
-            if piece[0] == "L" and piece[1] != "V":
-                initial_board.rotate_piece_to_config(row, 0, "LV")
+            if piece[0] == "L":
+                if piece[1] != "V":
+                    initial_board.rotate_piece_to_config(row, 0, "LV")
+                initial_board.make_piece_permanent(row, 0)
 
-            if piece[0] == "B" and piece[1] != "D":
-                initial_board.rotate_piece_to_config(row, 0, "BD")
+            if piece[0] == "B":
+                if piece[1] != "D":
+                    initial_board.rotate_piece_to_config(row, 0, "BD")
+                initial_board.make_piece_permanent(row, 0)
 
         # Percorrer a última coluna do tabuleiro
         for row in range(board_dim):
 
             piece = initial_board.get_value(row, board_dim-1)
 
-            if piece[0] == "L" and piece[1] != "V":
-                initial_board.rotate_piece_to_config(row, 0, "LV")
+            if piece[0] == "L":
+                if piece[1] != "V":
+                    initial_board.rotate_piece_to_config(row, board_dim-1, "LV")
+                initial_board.make_piece_permanent(row, col)
 
-            if piece[0] == "B" and piece[1] != "E":
-                initial_board.rotate_piece_to_config(row, 0, "BE")
+            if piece[0] == "B":
+                if piece[1] != "E":
+                    initial_board.rotate_piece_to_config(row, board_dim-1, "BE")
+                initial_board.make_piece_permanent(row, col)
+
+    
+    
 
 
 
-    def actions(self, state: PipeManiaState) -> List[Tuple[int, int, int]]:
+    def actions(self, state: PipeManiaState):
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
 
@@ -351,7 +451,8 @@ if __name__ == "__main__":
     problem = PipeMania(board)
     initial_state = PipeManiaState(board)
 
-    problem.limit_borders()
+    problem.change_borders()
+    print(problem.actions(initial_state))
     board.print_grid()
 
     
