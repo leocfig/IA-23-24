@@ -152,7 +152,7 @@ class PipeManiaState:
                 elif row == board_dim - 1 and col == board_dim - 1 and piece[0] == "F":
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_last_row_last_col[piece[1]]])
-                else:   #Falta pôr os casos em que isto tem de ignorar
+                else:
                     possible_actions.extend([(row, col, rotation) for rotation in range(1, 4)])  # Add 3 possible rotations
 
         return possible_actions
@@ -248,7 +248,7 @@ class Board:
         current_orientation = piece[1]
         desired_orientation = desired_config[1]
 
-        while current_orientation != desired_orientation:
+        while current_orientation != desired_orientation:       #MUDAR
             #Roda a peça para a esquerda até chegar à posição desejada
             self.turn_left(row, col)
             piece = self.get_value(row, col)
@@ -256,12 +256,11 @@ class Board:
 
     def rotate_piece(self, row: int, col: int, rotation: int):
         """Roda a peça na determinada posição com base no valor da rotação."""
-        if rotation == 1:
+
+        while rotation != 0:
             self.turn_left(row, col)
-        elif rotation == 2:
-            self.turn_180(row, col)
-        elif rotation == 3:
-            self.turn_right(row, col)
+            rotation -= 1
+        
 
 
     def turn_left(self, row: int, col: int):
@@ -271,22 +270,6 @@ class Board:
         new_orientation = orientations[piece[1]]
         self.set_value(row, col, piece[0] + new_orientation)
 
-    def turn_right(self, row: int, col: int):
-        """Roda a peça na determinada posição para a direita."""
-        piece = self.get_value(row, col)
-        orientations = {'C': 'D', 'D': 'B', 'B': 'E', 'E': 'C', 'H': 'V', 'V': 'H'}
-        new_orientation = orientations[piece[1]]
-        self.set_value(row, col, piece[0] + new_orientation)
-
-    def turn_180(self, row: int, col: int):
-        """Roda a peça na determinada posição 180 graus."""
-        piece = self.get_value(row, col)
-        orientations = {'C': 'B', 'B': 'C', 'E': 'D', 'D': 'E', 'H': 'V', 'V': 'H'}
-        new_orientation = orientations[piece[1]]
-        self.set_value(row, col, piece[0] + new_orientation)
-
-    
-    
     
     def print_grid(self):
         for row in self.grid:
@@ -415,7 +398,7 @@ class PipeMania(Problem):
         das presentes na lista obtida pela execução de
         self.actions(state)."""
 
-        if action in self.actions(state):
+        if action in self.actions(state):   #MAYBE?
 
             current_board = state.get_board()
             row, col, rotation = action
