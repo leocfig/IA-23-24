@@ -122,9 +122,14 @@ class PipeManiaState:
             'V': {'C': ['E'], 'E': ['C'], 'B': ['C', 'E'], 'D': ['C', 'E']}
         }
 
+        rotation_mappings_last_row_not_first_last_col = {
+            'F': {'C': ['E', 'D'], 'E': ['C', 'D'], 'B': ['C', 'D', 'E'], 'D': ['C', 'E']},
+            'V': {'C': ['D'], 'E': ['C', 'D'], 'B': ['C', 'D'], 'D': ['C']}
+        }
+
         rotation_mappings_last_row_last_col = {'C': ['E'], 'E': ['C'], 'B': ['C', 'E'], 'D': ['C', 'E']}
 
-
+        
         for row in range(len(self.board.grid)):
             for col in range(len(self.board.grid[0])):
                 piece = self.board.get_value(row, col)
@@ -156,6 +161,9 @@ class PipeManiaState:
                     print("elif 6")
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_not_first_last_row_last_col[piece[0]][piece[1]]])
+                elif row == board_dim - 1 and col != 0 and col != board_dim - 1:
+                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                                            for new_orientation in rotation_mappings_last_row_not_first_last_col[piece[0]][piece[1]]])
                 elif row == board_dim - 1 and col == board_dim - 1 and piece[0] == "F":
                     print("elif 7")
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
@@ -250,7 +258,7 @@ class Board:
             orientations = ['C', 'D', 'B', 'E']
         start_index = orientations.index(start_orient)
         end_index = orientations.index(end_orient)
-        anticlockwise_rotations = (end_index - start_index) % len(orientations)
+        anticlockwise_rotations = (start_index - end_index) % len(orientations)
         return anticlockwise_rotations
     
     def rotate_piece_to_config(self, row: int, col: int, desired_config: str):
@@ -302,6 +310,56 @@ class PipeMania(Problem):
     def get_initial_state(self):
         """Devolve o estado inicial."""
         return self.initial
+
+    """
+
+    def change_borders(self):
+        Faz uma interpretação do estado atual do tabuleiro e faz alterações no limite do tabuleiro.
+        
+        initial_board = self.get_initial_state().get_board()
+        board_dim = len(initial_board.grid)
+
+        # Define mappings for each border piece configuration
+        border_mappings = {
+            # First row mappings
+            (0, col): {
+                ("V", "B"): "VB",
+                ("B", "B"): "BB",
+                ("L", "H"): "LH",
+                ("V", "E"): "VE",
+                ("F", "V"): "VF" if col == 0 else None
+            },
+            # Last row mappings
+            (board_dim-1, col): {
+                ("V", "D"): "VD",
+                ("B", "C"): "BC",
+                ("L", "V"): "LV",
+                ("F", "V"): "VF" if col == 0 or col == board_dim - 1 else None
+            },
+            # First column mappings (excluding corners)
+            (row, 0): {
+                ("L", "V"): "LV",
+                ("B", "D"): "BD",
+                ("F", "V"): "VF" if row == 0 or row == board_dim - 1 else None
+            },
+            # Last column mappings (excluding corners)
+            (row, board_dim-1): {
+                ("B", "E"): "BE",
+                ("F", "V"): "VF" if row == 0 or row == board_dim - 1 else None
+            }
+        }
+
+        # Apply mappings to the borders
+        for (row, col), mappings in border_mappings.items():
+            piece = initial_board.get_value(row, col)
+            new_config = mappings.get((piece[0], piece[1]))
+            if new_config:
+                initial_board.rotate_piece_to_config(row, col, new_config)
+                initial_board.make_piece_permanent(row, col)
+
+    """
+
+
     
     def change_borders(self):
         """Faz uma interpretação do estado atual do tabuleiro e faz alterações no limite do tabuleiro."""
