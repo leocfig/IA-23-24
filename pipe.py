@@ -6,7 +6,7 @@
 # 106157 Leonor Costa Figueira
 # 106322 Raquel dos Anjos Santos Caldeira Rodrigues
 
-import sys
+import sys, copy
 from search import (
     Problem,
     Node,
@@ -38,7 +38,7 @@ class PipeManiaState:
         return isinstance(other, PipeManiaState) and self.board == other.board
 
     def check_neighbors(self, row, col):
-        """Tenta tornar a determinada peça permanente com base se as vizinhas o são."""
+        """Tenta tornar a peça na posição especificada permanente com base nas vizinhas já permanentes."""
 
         permanent_piece = self.get_board().is_permanent(row, col)
         if permanent_piece:
@@ -128,32 +128,41 @@ class PipeManiaState:
         for row in range(len(self.board.grid)):
             for col in range(len(self.board.grid[0])):
                 piece = self.board.get_value(row, col)
+                print("Coordenadas: (", row, ",", col, ") Peça atual: ", piece)
 
                 if board.is_permanent(row, col):
                     pass
                 elif row == 0 and col == 0 and piece[0] == "F":
+                    print("elif 1")
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_first_row_first_col[piece[1]]])
                 elif row == 0 and col != 0 and col != board_dim - 1:
+                    print("elif 2")
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_first_row_not_first_last_col[piece[0]][piece[1]]])
                 elif row == 0 and col == board_dim - 1 and piece[0] == "F":
+                    print("elif 3")
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_first_row_last_col[piece[1]]])
                 elif row != 0 and row != board_dim - 1 and col == 0:
+                    print("elif 4")
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_not_first_last_row_first_col[piece[0]][piece[1]]])
                 elif row == board_dim - 1 and col == 0 and piece[0] == "F":
+                    print("elif 5")
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_last_row_first_col[piece[1]]])
-                elif row != 0 and col == board_dim - 1:
+                elif row != 0 and row != board_dim - 1 and col == board_dim - 1:
+                    print("elif 6")
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_not_first_last_row_last_col[piece[0]][piece[1]]])
                 elif row == board_dim - 1 and col == board_dim - 1 and piece[0] == "F":
+                    print("elif 7")
                     possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_last_row_last_col[piece[1]]])
                 else:
-                    possible_actions.extend([(row, col, rotation) for rotation in range(1, 4)])  # Add 3 possible rotations
+                    print("else")
+                    possible_actions.extend([(row, col, rotation) for rotation in range(1, 4)])  # Add 3 (all) possible rotations
 
         return possible_actions
 
@@ -170,7 +179,7 @@ class Board:
 
     def copy(self):
         """Cria uma cópia do tabuleiro."""
-        return deepcopy(self.grid)
+        return copy.deepcopy(self.grid)
 
     def is_grid_index(self, row: int, col: int) -> bool:
         """Devolve True se a posição do tabuleiro é válida, False caso contrário."""
@@ -232,6 +241,8 @@ class Board:
 
     def calculate_rotation(self, start_orient: str, end_orient: str) -> int:
         # Mudar comentário para português
+        """Calcula o número de rotações no sentido anti-horário necessárias para 
+        obter a orientação final end_orient a partir da orientação inicial star_orient"""
         """Calculate the number of anticlockwise rotations needed to transition from start_orient to end_orient."""
         if start_orient in {'H', 'V'}:
             orientations = ['H', 'V']
@@ -264,7 +275,7 @@ class Board:
 
 
     def turn_left(self, row: int, col: int):
-        """Roda a peça na determinada posição para a esquerda."""
+        """Roda a peça na posição especificada para a esquerda (sentido anti-horário)."""
         piece = self.get_value(row, col)
         orientations = {'C': 'E', 'E': 'B', 'B': 'D', 'D': 'C', 'H': 'V', 'V': 'H'}
         new_orientation = orientations[piece[1]]
@@ -435,6 +446,7 @@ if __name__ == "__main__":
     initial_state = PipeManiaState(board)
 
     problem.change_borders()
+    board.print_grid()
     print(problem.actions(initial_state))
     board.print_grid()
 
