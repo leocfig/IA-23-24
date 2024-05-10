@@ -235,26 +235,30 @@ class Board:
 
         return water_pipes.get(piece)
     
-    def compare_piece_connections(self, current_piece: List[int], left_piece: List[int], piece_above: List[int]) -> bool:
-        """Compara as saídas de água da peça especificada com as peças que estão à sua esquerda e em cima"""
-
-        if left_piece is None and piece_above is None:
+    def compare_piece_connections(self, current_piece: List[int], left_piece: List[int], above_piece: List[int]) -> bool:
+        """Compara as saídas de água da peça especificada com as peças que estão
+        à sua esquerda e em cima. Devolve True se forem compatíveis, False caso contrário."""
+            
+        if left_piece is None and above_piece is None: # canto superior esquerdo
             return True
 
-        elif piece_above is None and left_piece is not None:
+        elif above_piece is None and left_piece is not None: # 1ª linha
+            # Esquerda da peça atual VS Direita da peça à esquerda
             if current_piece[3] == left_piece[1]:
                 return True
             else:
                 return False
 
-        elif left_piece is None and piece_above is not None:
-            if current_piece[0] == piece_above[2]:
+        elif left_piece is None and above_piece is not None: # 1ª coluna
+            # Cima da peça atual VS Baixo da peça acima
+            if current_piece[0] == above_piece[2]:
                 return True
             else:
                 return False
-            
-        else:
-            if current_piece[0] == piece_above[2] and current_piece[3] == left_piece[1]:
+
+        else:                                                # resto do tabuleiro
+            # Combina as duas comparações anteriores
+            if current_piece[0] == above_piece[2] and current_piece[3] == left_piece[1]:
                 return True
             else:
                 return False
@@ -262,7 +266,8 @@ class Board:
     def make_piece_permanent(self, row, col):
         """Torna a configuração da peça permanente no determinado tabuleiro."""
         piece = self.get_value(row, col)
-        self.set_value(row, col, piece.lower())  # Converts the piece to lowercase to signal the permanent spot
+        self.set_value(row, col, piece.lower())  # Altera a peça para letras minúsculas 
+                                                 # para assinalar que está permanente
 
     def is_permanent(self, row, col):
         """Verifica se a peça na determinada posição já está na sua configuração permanente."""
@@ -541,12 +546,14 @@ class PipeMania(Problem):
         board_dim = len(board.grid)
 
         for row in range(board_dim):
-            for col in range(1, board_dim):
+            for col in range(board_dim):
                 current_piece = board.get_value(row, col)
                 left_piece = board.get_value(row, col - 1)
                 above_piece = board.get_value(row - 1, col)
 
-                if not board.compare_piece_connections(board.get_water_pipes(current_piece), board.get_water_pipes(left_piece), board.get_water_pipes(above_piece)):
+                if not board.compare_piece_connections(board.get_water_pipes(current_piece), 
+                                                       board.get_water_pipes(left_piece), 
+                                                       board.get_water_pipes(above_piece)):
                     return False
         
         return True
@@ -586,7 +593,8 @@ if __name__ == "__main__":
 
     print("Is goal?", problem.goal_test(s1))
     print("Is goal?", problem.goal_test(s11))
-    print("Solution:\n", s11.get_board().print_grid(), sep="")
+    print("Solution:")
+    s11.get_board().print_grid()
     
 
 
