@@ -189,7 +189,7 @@ class Board:
 
     def copy(self):
         """Cria uma cópia do tabuleiro."""
-        return copy.deepcopy(self.grid)
+        return Board([row[:] for row in self.grid])
 
     def is_grid_index(self, row: int, col: int) -> bool:
         """Devolve True se a posição do tabuleiro é válida, False caso contrário."""
@@ -227,19 +227,34 @@ class Board:
             "LH": [0, 1, 0, 1],
             "LV": [1, 0, 1, 0],
         }
-        return water_pipes.get(piece.upper())
+
+        if piece is None:
+            return None
+
+        piece = piece.upper()
+
+        return water_pipes.get(piece)
     
-    def compare_piece_connections(piece: List[int], piece_left: List[int], piece_up: List[int]) -> bool:
+    def compare_piece_connections(self, current_piece: List[int], left_piece: List[int], piece_above: List[int]) -> bool:
         """Compara as saídas de água da peça especificada com as peças que estão à sua esquerda e em cima"""
 
-        if piece_up is None:
-            if piece[3] == piece_left[1]:
+        if left_piece is None and piece_above is None:
+            return True
+
+        elif piece_above is None and left_piece is not None:
+            if current_piece[3] == left_piece[1]:
+                return True
+            else:
+                return False
+
+        elif left_piece is None and piece_above is not None:
+            if current_piece[0] == piece_above[2]:
                 return True
             else:
                 return False
             
         else:
-            if piece[0] == piece_up[2] and piece[3] == piece_left[1]:
+            if current_piece[0] == piece_above[2] and current_piece[3] == left_piece[1]:
                 return True
             else:
                 return False
@@ -517,8 +532,6 @@ class PipeMania(Problem):
         
         return new_state
 
-        # TODO
-
     def goal_test(self, state: PipeManiaState):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
@@ -528,12 +541,12 @@ class PipeMania(Problem):
         board_dim = len(board.grid)
 
         for row in range(board_dim):
-            for col in range(1, board_dim):  # Starts from the second column
+            for col in range(1, board_dim):
                 current_piece = board.get_value(row, col)
                 left_piece = board.get_value(row, col - 1)
                 above_piece = board.get_value(row - 1, col)
 
-                if not board.compare_piece_connections(get_water_pipes(current_piece, left_piece, above_piece)):
+                if not board.compare_piece_connections(board.get_water_pipes(current_piece), board.get_water_pipes(left_piece), board.get_water_pipes(above_piece)):
                     return False
         
         return True
@@ -564,19 +577,16 @@ if __name__ == "__main__":
 
     s1 = problem.result(s0, (0, 1, 3))
     s2 = problem.result(s1, (0, 1, 3))
-    s3 = problem.result(s2, (0, 2, 3))
-    s4 = problem.result(s3, (0, 2, 3))
-    s5 = problem.result(s4, (1, 0, 3))
-    s6 = problem.result(s5, (1, 1, 3))
+    s6 = problem.result(s2, (1, 1, 3))
     s7 = problem.result(s6, (2, 0, 1)) # anti-clockwise (exemplo de uso)
     s8 = problem.result(s7, (2, 0, 1)) # anti-clockwise (exemplo de uso)
     s9 = problem.result(s8, (2, 1, 3))
     s10 = problem.result(s9, (2, 1, 3))
     s11 = problem.result(s10, (2, 2, 3))
 
-    print("Is goal?", problem.goal_test(s5))
+    print("Is goal?", problem.goal_test(s1))
     print("Is goal?", problem.goal_test(s11))
-    print("Solution:\n", s11.board.print(), sep="")
+    print("Solution:\n", s11.get_board().print_grid(), sep="")
     
 
 
