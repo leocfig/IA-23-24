@@ -17,6 +17,8 @@ from search import (
     recursive_best_first_search,
 )
 
+from typing import List #ig?
+
 
 class PipeManiaState:
     state_id = 0
@@ -204,6 +206,43 @@ class Board:
             return self.grid[row][col]
         else:
             return None
+    
+    def get_water_pipes(self, piece: str):
+        """Retorna o vetor que representa as saídas de água da peça especificada."""
+
+        water_pipes = {
+            # [Cima, Direita, Baixo, Esquerda]
+            "FC": [1, 0, 0, 0],
+            "FB": [0, 0, 1, 0],
+            "FE": [0, 0, 0, 1],
+            "FD": [0, 1, 0, 0],
+            "BC": [1, 1, 0, 1],
+            "BB": [0, 1, 1, 1],
+            "BE": [1, 0, 1, 1],
+            "BD": [1, 1, 1, 0],
+            "VC": [1, 0, 0, 1],
+            "VB": [0, 1, 1, 0],
+            "VE": [0, 0, 1, 1],
+            "VD": [1, 1, 0, 0],
+            "LH": [0, 1, 0, 1],
+            "LV": [1, 0, 1, 0],
+        }
+        return water_pipes.get(piece.upper())
+    
+    def compare_piece_connections(piece: List[int], piece_left: List[int], piece_up: List[int]) -> bool:
+        """Compara as saídas de água da peça especificada com as peças que estão à sua esquerda e em cima"""
+
+        if piece_up is None:
+            if piece[3] == piece_left[1]:
+                return True
+            else:
+                return False
+            
+        else:
+            if piece[0] == piece_up[2] and piece[3] == piece_left[1]:
+                return True
+            else:
+                return False
 
     def make_piece_permanent(self, row, col):
         """Torna a configuração da peça permanente no determinado tabuleiro."""
@@ -467,16 +506,16 @@ class PipeMania(Problem):
         das presentes na lista obtida pela execução de
         self.actions(state)."""
 
-        if action in self.actions(state):   #MAYBE?
+        #if action in self.actions(state):   #MAYBE?
 
-            current_board = state.get_board()
-            row, col, rotation = action
-            new_board = current_board.copy()
-            new_board.rotate_piece(row, col, rotation)
+        current_board = state.get_board()
+        row, col, rotation = action
+        new_board = current_board.copy()
+        new_board.rotate_piece(row, col, rotation)
 
-            new_state = PipeManiaState(new_board)
-            
-            return new_state
+        new_state = PipeManiaState(new_board)
+        
+        return new_state
 
         # TODO
 
@@ -484,8 +523,24 @@ class PipeMania(Problem):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas de acordo com as regras do problema."""
-        # TODO
-        pass
+
+        board = state.get_board()
+        board_dim = len(board.grid)
+
+        for row in range(board_dim):
+            for col in range(1, board_dim):  # Starts from the second column
+                current_piece = board.get_value(row, col)
+                left_piece = board.get_value(row, col - 1)
+                above_piece = board.get_value(row - 1, col)
+
+                if not board.compare_piece_connections(get_water_pipes(current_piece, left_piece, above_piece)):
+                    return False
+        
+        return True
+
+
+
+
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
@@ -501,12 +556,30 @@ if __name__ == "__main__":
     board = Board.parse_instance()
 
     problem = PipeMania(board)
-    initial_state = PipeManiaState(board)
+    s0 = PipeManiaState(board)
 
     problem.change_borders()
+    print(problem.actions(s0))
     board.print_grid()
-    print(problem.actions(initial_state))
-    board.print_grid()
+
+    s1 = problem.result(s0, (0, 1, 3))
+    s2 = problem.result(s1, (0, 1, 3))
+    s3 = problem.result(s2, (0, 2, 3))
+    s4 = problem.result(s3, (0, 2, 3))
+    s5 = problem.result(s4, (1, 0, 3))
+    s6 = problem.result(s5, (1, 1, 3))
+    s7 = problem.result(s6, (2, 0, 1)) # anti-clockwise (exemplo de uso)
+    s8 = problem.result(s7, (2, 0, 1)) # anti-clockwise (exemplo de uso)
+    s9 = problem.result(s8, (2, 1, 3))
+    s10 = problem.result(s9, (2, 1, 3))
+    s11 = problem.result(s10, (2, 2, 3))
+
+    print("Is goal?", problem.goal_test(s5))
+    print("Is goal?", problem.goal_test(s11))
+    print("Solution:\n", s11.board.print(), sep="")
+    
+
+
 
     
 
