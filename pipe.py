@@ -234,6 +234,8 @@ class Board:
         piece = piece.upper()
 
         return water_pipes.get(piece)
+
+    
     
     def compare_piece_connections(self, current_piece: List[int], left_piece: List[int], above_piece: List[int]) -> bool:
         """Compara as saídas de água da peça especificada com as peças que estão
@@ -262,6 +264,39 @@ class Board:
                 return True
             else:
                 return False
+            
+    
+    def board_into_graph(self):
+        
+        board = get_board()
+        board_dim = len(board.grid)
+        
+        # Create an empty graph
+        G = nx.Graph()
+
+        # Add nodes representing pieces on the board
+        for row in range(board_dim):
+            for col in range(board_dim):
+                node_id = row * board_dim + col
+                G.add_node(node_id)
+
+        # Add edges between adjacent pieces
+        for row in range(board_dim):
+            for col in range(board_dim):
+                node_id = row * board_dim + col
+                
+                if compare_piece_connections():
+                    neighbor_id = (row - 1) * board_dim + col
+                    G.add_edge(node_id, neighbor_id)
+
+        # Detect subgraphs
+        subgraphs = list(nx.connected_components(G))
+
+        # Analyze subgraphs
+        if len(subgraphs) > 1:
+            return False
+        else:
+            return True
 
     def make_piece_permanent(self, row, col):
         """Torna a configuração da peça permanente no determinado tabuleiro."""
@@ -307,10 +342,8 @@ class Board:
 
 
     def calculate_rotation(self, start_orient: str, end_orient: str) -> int:
-        # Mudar comentário para português
         """Calcula o número de rotações no sentido anti-horário necessárias para 
         obter a orientação final end_orient a partir da orientação inicial star_orient"""
-        """Calculate the number of anticlockwise rotations needed to transition from start_orient to end_orient."""
         if start_orient in {'H', 'V'}:
             orientations = ['H', 'V']
         else:
@@ -321,16 +354,11 @@ class Board:
         return anticlockwise_rotations
     
     def rotate_piece_to_config(self, row: int, col: int, desired_config: str):
-        """Rotaciona a peça na posição (row, col) até que sua configuração seja igual à configuração desejada."""
+        """Rotaciona a peça na posição (row, col) para a configuração desejada."""
         piece = self.get_value(row, col)
-        current_orientation = piece[1]
-        desired_orientation = desired_config[1]
+        new_piece = piece[0] + desired_config[1] # Creates a new piece with the desired configuration
+        self.set_value(row, col, new_piece)         
 
-        while current_orientation != desired_orientation:       #MUDAR
-            #Roda a peça para a esquerda até chegar à posição desejada
-            self.turn_left(row, col)
-            piece = self.get_value(row, col)
-            current_orientation = piece[1]
 
     def rotate_piece(self, row: int, col: int, rotation: int):
         """Roda a peça na determinada posição com base no valor da rotação."""
@@ -340,7 +368,6 @@ class Board:
             rotation -= 1
         
 
-
     def turn_left(self, row: int, col: int):
         """Roda a peça na posição especificada para a esquerda (sentido anti-horário)."""
         piece = self.get_value(row, col)
@@ -349,9 +376,16 @@ class Board:
         self.set_value(row, col, piece[0] + new_orientation)
 
     
-    def print_grid(self):
+    def print_grid_debug(self):
         for row in self.grid:
             print(' '.join(row))
+
+
+    def print_grid(self):
+        for row in self.grid:
+            # Converts each piece to uppercase before printing
+            print(' '.join(piece.upper() for piece in row))
+
 
     # TODO: outros metodos da classe
 
@@ -532,6 +566,7 @@ class PipeMania(Problem):
         row, col, rotation = action
         new_board = current_board.copy()
         new_board.rotate_piece(row, col, rotation)
+        new_board.make_piece_permanent(row, col)
 
         new_state = PipeManiaState(new_board)
         
@@ -571,17 +606,28 @@ class PipeMania(Problem):
 
 
 if __name__ == "__main__":
-    # TODO:
 
+    
     board = Board.parse_instance()
+    problem = PipeMania(board)
+    problem.change_borders()
+    board.print_grid_debug()
+    # Obter o nó solução usando a procura em profundidade:
+    goal_node = depth_first_tree_search(problem)
+    # Verificar se foi atingida a solução
+    print("Is goal?", problem.goal_test(goal_node.state))
+    print("Solution:")
+    goal_node.state.get_board().print_grid()
+    
 
+
+    """
+    board = Board.parse_instance()
     problem = PipeMania(board)
     s0 = PipeManiaState(board)
-
     problem.change_borders()
     print(problem.actions(s0))
     board.print_grid()
-
     s1 = problem.result(s0, (0, 1, 3))
     s2 = problem.result(s1, (0, 1, 3))
     s6 = problem.result(s2, (1, 1, 3))
@@ -590,16 +636,11 @@ if __name__ == "__main__":
     s9 = problem.result(s8, (2, 1, 3))
     s10 = problem.result(s9, (2, 1, 3))
     s11 = problem.result(s10, (2, 2, 3))
-
     print("Is goal?", problem.goal_test(s1))
     print("Is goal?", problem.goal_test(s11))
     print("Solution:")
     s11.get_board().print_grid()
-    
-
-
-
-    
+    """
 
     
 
