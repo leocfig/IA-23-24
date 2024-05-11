@@ -6,7 +6,8 @@
 # 106157 Leonor Costa Figueira
 # 106322 Raquel dos Anjos Santos Caldeira Rodrigues
 
-import sys, copy
+import sys
+
 from search import (
     Problem,
     Node,
@@ -18,6 +19,48 @@ from search import (
 )
 
 from typing import List #ig?
+
+
+class Graph:
+    def __init__(self):
+        self.adjacency_list = {}
+
+    def print_edges(self):
+        """Prints the edges of the graph."""
+        print(len(self.adjacency_list))
+        for vertex, neighbors in self.adjacency_list.items():
+            for neighbor in neighbors:
+                print(f"Edge: ({vertex}, {neighbor})")
+
+
+    def add_edge(self, u, v):
+        if u not in self.adjacency_list:
+            self.adjacency_list[u] = []
+        if v not in self.adjacency_list:
+            self.adjacency_list[v] = []
+        self.adjacency_list[u].append(v)
+        self.adjacency_list[v].append(u)
+
+    def dfs(self, node, visited):
+        visited.add(node)
+        for neighbor in self.adjacency_list.get(node, []):
+            if neighbor not in visited:
+                self.dfs(neighbor, visited)
+
+    def connected_components(self):
+        visited = set()
+        subgraphs = []
+        for node in self.adjacency_list:
+            if node not in visited:
+                subgraph = set()
+                self.dfs(node, subgraph)
+                subgraphs.append(subgraph)
+                visited.update(subgraph)
+        return subgraphs
+
+    def subgraph_count(self):
+        return len(self.connected_components())
+
 
 
 class PipeManiaState:
@@ -236,6 +279,27 @@ class Board:
         return water_pipes.get(piece)
 
     
+    def check_connections(self, current_piece: List[int], other_piece: List[int], left_comparison: bool) -> int:
+        """Compara as saídas de água da peça especificada com a peça à esquerda se left_comparison for True,
+        caso contrário compara com a peça acima. Devolve 0 caso as duas peças sejam compatíveis sem ligação,
+        1 caso forem compatíveis com ligação e 2 se forem incompatíveis."""
+
+        if left_comparison: # Compara com a peça à esquerda
+            if current_piece[3] == other_piece[1] == 0:
+                return 0
+            elif current_piece[3] == other_piece[1] == 1:
+                return 1
+
+        else: # Compara com a peça acima
+            if current_piece[0] == other_piece[2] == 0:
+                return 0
+            elif current_piece[0] == other_piece[2] == 1:
+                return 1
+
+        # Se as peças forem incompatíveis
+        return 2
+
+    
     
     def compare_piece_connections(self, current_piece: List[int], left_piece: List[int], above_piece: List[int]) -> bool:
         """Compara as saídas de água da peça especificada com as peças que estão
@@ -246,57 +310,26 @@ class Board:
 
         elif above_piece is None and left_piece is not None: # 1ª linha
             # Esquerda da peça atual VS Direita da peça à esquerda
-            if current_piece[3] == left_piece[1]:
+            if self.check_connections(current_piece, left_piece, True) != 2:
                 return True
             else:
                 return False
 
         elif left_piece is None and above_piece is not None: # 1ª coluna
             # Cima da peça atual VS Baixo da peça acima
-            if current_piece[0] == above_piece[2]:
+            if self.check_connections(current_piece, above_piece, False) != 2:
                 return True
             else:
                 return False
 
         else:                                                # resto do tabuleiro
             # Combina as duas comparações anteriores
-            if current_piece[0] == above_piece[2] and current_piece[3] == left_piece[1]:
+            if self.check_connections(current_piece, above_piece, False) != 2 and \
+                self.check_connections(current_piece, left_piece, True) != 2:
                 return True
             else:
                 return False
-            
-    
-    def board_into_graph(self):
-        
-        board = get_board()
-        board_dim = len(board.grid)
-        
-        # Create an empty graph
-        G = nx.Graph()
-
-        # Add nodes representing pieces on the board
-        for row in range(board_dim):
-            for col in range(board_dim):
-                node_id = row * board_dim + col
-                G.add_node(node_id)
-
-        # Add edges between adjacent pieces
-        for row in range(board_dim):
-            for col in range(board_dim):
-                node_id = row * board_dim + col
-                
-                if compare_piece_connections():
-                    neighbor_id = (row - 1) * board_dim + col
-                    G.add_edge(node_id, neighbor_id)
-
-        # Detect subgraphs
-        subgraphs = list(nx.connected_components(G))
-
-        # Analyze subgraphs
-        if len(subgraphs) > 1:
-            return False
-        else:
-            return True
+               
 
     def make_piece_permanent(self, row, col):
         """Torna a configuração da peça permanente no determinado tabuleiro."""
@@ -362,7 +395,6 @@ class Board:
 
     def rotate_piece(self, row: int, col: int, rotation: int):
         """Roda a peça na determinada posição com base no valor da rotação."""
-
         while rotation != 0:
             self.turn_left(row, col)
             rotation -= 1
@@ -541,18 +573,11 @@ class PipeMania(Problem):
                 initial_board.make_piece_permanent(row, col)
 
     
-    
-
-
-
     def actions(self, state: PipeManiaState):
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
-
         return state.generate_actions()
 
-        # TODO
-        
 
     def result(self, state: PipeManiaState, action):
         """Retorna o estado resultante de executar a 'action' sobre
@@ -591,6 +616,50 @@ class PipeMania(Problem):
                                                        board.get_water_pipes(above_piece)):
                     return False
         
+        # Creates a graph to check if there are subsets of water connected pipes
+        graph = Graph()
+
+        for row in range(board_dim):
+            for col in range(board_dim):
+                current_piece = board.get_value(row, col)
+                left_piece = board.get_value(row, col - 1)
+                above_piece = board.get_value(row - 1, col)
+
+                node_id = row * board_dim + col
+                left_neighbor_id = row * board_dim + col - 1
+                above_neighbor_id = (row - 1) * board_dim + col
+
+                print("node_id:",  node_id)
+                print("left_piece is not None:")
+                print(left_piece is not None)
+
+                print("above_piece is not None:")
+                print(above_piece is not None)
+
+                if left_piece is not None:
+                    print("board.check_connections entre current e left")
+                    print(board.check_connections(board.get_water_pipes(current_piece),
+                        board.get_water_pipes(left_piece), True))
+
+                if above_piece is not None:
+                    print("board.check_connections entre current e above")
+                    print(board.check_connections(board.get_water_pipes(current_piece),
+                        board.get_water_pipes(above_piece), False))
+
+                if left_piece is not None and (board.check_connections(board.get_water_pipes(current_piece),
+                                                                      board.get_water_pipes(left_piece), True) == 1):
+                    graph.add_edge(node_id, left_neighbor_id)
+                
+                if above_piece is not None and (board.check_connections(board.get_water_pipes(current_piece),
+                                                                       board.get_water_pipes(above_piece), False) == 1):
+                    graph.add_edge(node_id, above_neighbor_id)
+        
+
+        if graph.subgraph_count() > 1:
+            print("graph.subgraph_count")
+            print(graph.subgraph_count())
+            return False
+
         return True
 
 
@@ -607,7 +676,7 @@ class PipeMania(Problem):
 
 if __name__ == "__main__":
 
-    
+    """
     board = Board.parse_instance()
     problem = PipeMania(board)
     problem.change_borders()
@@ -618,7 +687,7 @@ if __name__ == "__main__":
     print("Is goal?", problem.goal_test(goal_node.state))
     print("Solution:")
     goal_node.state.get_board().print_grid()
-    
+    """
 
 
     """
@@ -628,19 +697,21 @@ if __name__ == "__main__":
     problem.change_borders()
     print(problem.actions(s0))
     board.print_grid()
-    s1 = problem.result(s0, (0, 1, 3))
-    s2 = problem.result(s1, (0, 1, 3))
+    s2 = problem.result(s0, (0, 1, 2))
     s6 = problem.result(s2, (1, 1, 3))
-    s7 = problem.result(s6, (2, 0, 1)) # anti-clockwise (exemplo de uso)
-    s8 = problem.result(s7, (2, 0, 1)) # anti-clockwise (exemplo de uso)
-    s9 = problem.result(s8, (2, 1, 3))
-    s10 = problem.result(s9, (2, 1, 3))
-    s11 = problem.result(s10, (2, 2, 3))
-    print("Is goal?", problem.goal_test(s1))
+    s8 = problem.result(s6, (2, 0, 2)) # anti-clockwise (exemplo de uso)
+    s9 = problem.result(s8, (2, 1, 2))
+    s11 = problem.result(s9, (2, 2, 3))
+    print("Is goal?", problem.goal_test(s2))
     print("Is goal?", problem.goal_test(s11))
     print("Solution:")
     s11.get_board().print_grid()
     """
+
+    board = Board.parse_instance()
+    problem = PipeMania(board)
+    s0 = PipeManiaState(board)
+    print("Is goal?", problem.goal_test(s0))
 
     
 
