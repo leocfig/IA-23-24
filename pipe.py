@@ -86,39 +86,48 @@ class PipeManiaState:
         """"""
 
         board = self.get_board()
-
-        if board.is_permanent(row, col):
-            return
+        actions = []
 
         # Define the indices of the neighboring positions
-        neighbor_indices = [
-            
-            (row - 1, col),  # Above
-            (row, col + 1)   # Right
-            (row + 1, col),  # Below
-            (row, col - 1),  # Left
+        neighbor = [
+            (row - 1, col),  # Cima
+            (row, col + 1)   # Direita
+            (row + 1, col),  # Baixo
+            (row, col - 1),  # Esquerda
         ]
-
-        # [Cima, Direita, Baixo, Esquerda]
 
         for row in range(board_dim):
             for col in range(board_dim):
+                
+                # Vetor com saídas de água da peça atual que será
+                # construído através das peças vizinhas já permanentes
+                piece_water_pipes = [-1] * 4
+
+                piece = board.get_value(row, col)
 
                 for i in range(0, 4):
-
-                    neighbor_row, neighbor_col = neighbor_indices[i]
+                    
+                    neighbor_row, neighbor_col = neighbor[i]
 
                     neighbor_piece = self.get_value(neighbor_row, neighbor_col)
                     neighbor_permanent = self.is_permanent(neighbor_row, neighbor_col)
                     
                     if neighbor_permanent:
-                        if board.check_connections(board.get_water_pipes(current_piece),
-                                                   board.get_water_pipes(neighbor_piece), i+1)
+                                                                                    #Calcular o índice da saída de água da peça vizinha
+                        piece_water_pipes[i] = board.get_water_pipes(neighbor_piece)[(i + 2) % len(neighbor)]
 
+                possible_configs = board.find_matching_pieces(piece, piece_water_pipes)
+
+                if len(possible_configs) == 1:
+                    rotate_piece_to_config(row, col, possible_configs[0])
+                    board.make_piece_permanent(row, col)
                 
+                else:
+                    for rotated_piece in possible_configs:
+                        actions.extend([(row, col, self.board.calculate_rotation(piece[1], rotated_piece[1]))])
 
 
-
+        # FAZER INTERSEÇÃO ENTRE LISTAS
 
 
     def change_neighbors(self):
@@ -255,34 +264,60 @@ class Board:
             return self.grid[row][col]
         else:
             return None
-    
-    def get_water_pipes(self, piece: str):
-        """Retorna o vetor que representa as saídas de água da peça especificada."""
+
+    def get_pipes(self, piece_type: chr) -> dict:
+        """Retorna o dicionário das saídas de água da peça especificada."""
 
         water_pipes = {
             # [Cima, Direita, Baixo, Esquerda]
-            "FC": [1, 0, 0, 0],
-            "FB": [0, 0, 1, 0],
-            "FE": [0, 0, 0, 1],
-            "FD": [0, 1, 0, 0],
-            "BC": [1, 1, 0, 1],
-            "BB": [0, 1, 1, 1],
-            "BE": [1, 0, 1, 1],
-            "BD": [1, 1, 1, 0],
-            "VC": [1, 0, 0, 1],
-            "VB": [0, 1, 1, 0],
-            "VE": [0, 0, 1, 1],
-            "VD": [1, 1, 0, 0],
-            "LH": [0, 1, 0, 1],
-            "LV": [1, 0, 1, 0],
+            "F": {"FC": [1, 0, 0, 0],
+                  "FB": [0, 0, 1, 0],
+                  "FE": [0, 0, 0, 1],
+                  "FD": [0, 1, 0, 0]}
+
+            "B": {"BC": [1, 1, 0, 1],
+                  "BB": [0, 1, 1, 1],
+                  "BE": [1, 0, 1, 1],
+                  "BD": [1, 1, 1, 0]}
+                
+            "V": {"VC": [1, 0, 0, 1],
+                  "VB": [0, 1, 1, 0],
+                  "VE": [0, 0, 1, 1],
+                  "VD": [1, 1, 0, 0]}
+            
+            "L": {"LH": [0, 1, 0, 1],
+                  "LV": [1, 0, 1, 0]}
         }
+
+        return water_pipes[piece_type]
+
+
+    def get_water_pipes(self, piece: str) -> List[int]:
+        """Retorna o vetor que representa as saídas de água da peça especificada."""
 
         if piece is None:
             return None
 
         piece = piece.upper()
 
-        return water_pipes.get(piece)
+        return self.get_pipes(piece[0]).get(piece)
+    
+
+    def find_matching_pieces(self, current_piece: str, piece_water_pipes: List[int]):
+        """"""
+        
+        board = self.get_board()
+        water_pipes_dict = board.get_pipes()
+
+        for piece, water_pipes in water_pipes_dict.items():
+            for i in range(0,4):
+                if piece_water_pipes[i] == -1:
+                    continue
+                if water_pipes[i] != piece_water_pipes[i]:
+                    water_pipes_dict.pop(piece)
+
+        return list(water_pipes_dict.keys())
+
 
     
     def check_connections(self, current_piece: List[int], other_piece: List[int], comparison: int) -> int:
