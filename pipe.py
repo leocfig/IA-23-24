@@ -72,7 +72,7 @@ class PipeManiaState:
         PipeManiaState.state_id += 1
 
     def get_board(self):
-        """Retorna o tabuleiro."""
+        """Retorna o tabuleiro do estado."""
         return self.board
 
     def __lt__(self, other):
@@ -86,40 +86,45 @@ class PipeManiaState:
         """"""
 
         board = self.get_board()
+        board_dim = len(board.grid)
         actions = []
-
-        # Define the indices of the neighboring positions
-        neighbor = [
-            (row - 1, col),  # Cima
-            (row, col + 1)   # Direita
-            (row + 1, col),  # Baixo
-            (row, col - 1),  # Esquerda
-        ]
 
         for row in range(board_dim):
             for col in range(board_dim):
+
+                # Define the indices of the neighboring positions
+                neighbor = [
+                    (row - 1, col),  # Cima
+                    (row, col + 1),  # Direita
+                    (row + 1, col),  # Baixo
+                    (row, col - 1),  # Esquerda
+                ]
                 
                 # Vetor com saídas de água da peça atual que será
                 # construído através das peças vizinhas já permanentes
                 piece_water_pipes = [-1] * 4
 
                 piece = board.get_value(row, col)
+                if board.is_permanent(row, col):
+                    continue
 
                 for i in range(0, 4):
                     
                     neighbor_row, neighbor_col = neighbor[i]
 
-                    neighbor_piece = self.get_value(neighbor_row, neighbor_col)
-                    neighbor_permanent = self.is_permanent(neighbor_row, neighbor_col)
-                    
-                    if neighbor_permanent:
-                                                                                    #Calcular o índice da saída de água da peça vizinha
-                        piece_water_pipes[i] = board.get_water_pipes(neighbor_piece)[(i + 2) % len(neighbor)]
+                    if board.is_grid_index(neighbor_row, neighbor_col):
+
+                        neighbor_piece = board.get_value(neighbor_row, neighbor_col)
+                        neighbor_permanent = board.is_permanent(neighbor_row, neighbor_col)
+                        
+                        if neighbor_permanent:
+                                                                                        #Calcular o índice da saída de água da peça vizinha
+                            piece_water_pipes[i] = board.get_water_pipes(neighbor_piece)[(i + 2) % len(neighbor)]
 
                 possible_configs = board.find_matching_pieces(piece, piece_water_pipes)
 
                 if len(possible_configs) == 1:
-                    rotate_piece_to_config(row, col, possible_configs[0])
+                    board.rotate_piece_to_config(row, col, possible_configs[0])
                     board.make_piece_permanent(row, col)
                 
                 else:
@@ -127,7 +132,8 @@ class PipeManiaState:
                         actions.extend([(row, col, self.board.calculate_rotation(piece[1], rotated_piece[1]))])
 
 
-        # FAZER INTERSEÇÃO ENTRE LISTAS
+        common_actions = set(actions_list).intersection(actions)
+        return list(common_actions)
 
 
     def change_neighbors(self):
@@ -234,7 +240,7 @@ class PipeManiaState:
                     #print("else")
                     possible_actions.extend([(row, col, rotation) for rotation in range(1, 4)])  # Add 3 (all) possible rotations
 
-        return possible_actions
+        return self.check_neighbors(possible_actions)
 
 
 
@@ -273,17 +279,17 @@ class Board:
             "F": {"FC": [1, 0, 0, 0],
                   "FB": [0, 0, 1, 0],
                   "FE": [0, 0, 0, 1],
-                  "FD": [0, 1, 0, 0]}
+                  "FD": [0, 1, 0, 0]},
 
             "B": {"BC": [1, 1, 0, 1],
                   "BB": [0, 1, 1, 1],
                   "BE": [1, 0, 1, 1],
-                  "BD": [1, 1, 1, 0]}
+                  "BD": [1, 1, 1, 0]},
                 
             "V": {"VC": [1, 0, 0, 1],
                   "VB": [0, 1, 1, 0],
                   "VE": [0, 0, 1, 1],
-                  "VD": [1, 1, 0, 0]}
+                  "VD": [1, 1, 0, 0]},
             
             "L": {"LH": [0, 1, 0, 1],
                   "LV": [1, 0, 1, 0]}
@@ -306,15 +312,32 @@ class Board:
     def find_matching_pieces(self, current_piece: str, piece_water_pipes: List[int]):
         """"""
         
-        board = self.get_board()
-        water_pipes_dict = board.get_pipes()
+        #print(self.get_pipes(current_piece[0]))
+        water_pipes_dict = self.get_pipes(current_piece[0])
+
+        # Cria uma cópia das chaves para mais tarde iterar sobre as mesmas
+        pieces_to_remove = []
 
         for piece, water_pipes in water_pipes_dict.items():
+            # print(current_piece)
+            # print(piece_water_pipes)
+            # print(water_pipes)
             for i in range(0,4):
                 if piece_water_pipes[i] == -1:
                     continue
                 if water_pipes[i] != piece_water_pipes[i]:
-                    water_pipes_dict.pop(piece)
+                    pieces_to_remove.append(piece)
+                    break
+
+        # print(pieces_to_remove)
+        # print(water_pipes_dict.keys())
+
+
+        # Remove as peças que devem ser retiradas do dicionário
+        for piece in pieces_to_remove:
+            water_pipes_dict.pop(piece)
+
+        # print(water_pipes_dict.keys())
 
         return list(water_pipes_dict.keys())
 
@@ -328,49 +351,33 @@ class Board:
         3 -> Peça direita
         4 -> Peça baixo
         Devolve 0 caso as duas peças sejam compatíveis sem ligação,
-        1 caso forem compatíveis com ligação, 2 se apenas a peça especificada tem uma saída de água no
-        sentido da outra peça e 3 se apenas a outra peça tem uma saída de água no sentido da peça especificada."""
+        1 caso forem compatíveis com ligação, 2 se forem incompatíveis."""
 
         if comparison == 1: # Compara com a peça à esquerda
             if current_piece[3] == other_piece[1] == 0:
                 return 0
             elif current_piece[3] == other_piece[1] == 1:
                 return 1
-            elif current_piece[3] == 1:
-                return 2
-            else:
-                return 3
 
         elif comparison == 2: # Compara com a peça acima
             if current_piece[0] == other_piece[2] == 0:
                 return 0
             elif current_piece[0] == other_piece[2] == 1:
                 return 1
-            elif current_piece[0] == 1:
-                return 2
-            else:
-                return 3
 
         elif comparison == 3: # Compara com a peça à direita
             if current_piece[1] == other_piece[3] == 0:
                 return 0
             elif current_piece[1] == other_piece[3] == 1:
                 return 1
-            elif current_piece[1] == 1:
-                return 2
-            else:
-                return 3
 
         elif comparison == 4: # Compara com a peça de baixo
             if current_piece[2] == other_piece[0] == 0:
                 return 0
             elif current_piece[2] == other_piece[0] == 1:
                 return 1
-            elif current_piece[2] == 1:
-                return 2
-            else:
-                return 3
 
+        return 2
 
 
     
@@ -384,22 +391,22 @@ class Board:
 
         elif above_piece is None and left_piece is not None: # 1ª linha
             # Esquerda da peça atual VS Direita da peça à esquerda
-            if self.check_connections(current_piece, left_piece, 1) in {0,1}:
+            if self.check_connections(current_piece, left_piece, 1) != 2:
                 return True
             else:
                 return False
 
         elif left_piece is None and above_piece is not None: # 1ª coluna
             # Cima da peça atual VS Baixo da peça acima
-            if self.check_connections(current_piece, above_piece, 2) in {0,1}:
+            if self.check_connections(current_piece, above_piece, 2) != 2:
                 return True
             else:
                 return False
 
         else:                                                # resto do tabuleiro
             # Combina as duas comparações anteriores
-            if self.check_connections(current_piece, above_piece, 2) in {0,1} and \
-                self.check_connections(current_piece, left_piece, 1) in {0,1}:
+            if self.check_connections(current_piece, above_piece, 2) != 2 and \
+                self.check_connections(current_piece, left_piece, 1) != 2:
                 return True
             else:
                 return False
