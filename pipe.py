@@ -82,15 +82,21 @@ class PipeManiaState:
         """Método para verificar se dois estados são iguais."""
         return isinstance(other, PipeManiaState) and self.board == other.board
 
-    def check_neighbors(self, actions_list: List[Tuple[int, int, int]]):
+    def check_neighbors(self, unfiltered_actions: dict):
         """"""
 
         board = self.get_board()
         board_dim = len(board.grid)
-        actions = []
+        all_actions = []
 
         for row in range(board_dim):
             for col in range(board_dim):
+
+                if board.is_permanent(row, col):
+                    continue
+
+                current_key = (row, col)
+                current_actions = []
 
                 # Define the indices of the neighboring positions
                 neighbor = [
@@ -105,8 +111,6 @@ class PipeManiaState:
                 piece_water_pipes = [-1] * 4
 
                 piece = board.get_value(row, col)
-                if board.is_permanent(row, col):
-                    continue
 
                 for i in range(0, 4):
                     
@@ -123,49 +127,40 @@ class PipeManiaState:
 
                 possible_configs = board.find_matching_pieces(piece, piece_water_pipes)
 
-                if len(possible_configs) == 1:
-                    board.rotate_piece_to_config(row, col, possible_configs[0])
-                    board.make_piece_permanent(row, col)
+                for rotated_piece in possible_configs:
+                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], rotated_piece[1]))])
                 
-                else:
-                    for rotated_piece in possible_configs:
-                        actions.extend([(row, col, self.board.calculate_rotation(piece[1], rotated_piece[1]))])
+                if current_actions:
+                    if current_key in unfiltered_actions:
+                        unfiltered_actions[current_key].append(current_actions)
+                    else:
+                        unfiltered_actions[current_key] = [current_actions]
+
+        for piece_key in unfiltered_actions:
+            if len(unfiltered_actions[piece_key]) == 2:
+                unfiltered_actions[piece_key] = list(set(unfiltered_actions[piece_key][0]).intersection(unfiltered_actions[piece_key][1]))
+            if len(unfiltered_actions[piece_key]) == 1:
+                board.rotate_piece(piece_key[0], piece_key[1], unfiltered_actions[piece_key][0][2])
+                board.make_piece_permanent(piece_key[0], piece_key[1])
+
+        for actions in unfiltered_actions.values():
+            all_actions.extend(actions)
+
+        return all_actions
 
 
-        common_actions = set(actions_list).intersection(actions)
-        return list(common_actions)
-
-
-    def change_neighbors(self):
-        """Faz uma interpretação do tabuleiro e faz alterações
-        em vizinhos de peças permanentes no tabuleiro."""
+    def update_neighbors(self):
+        """"""
         
         board = self.get_board()
         board_dim = len(board.grid)
-        nr_iterations = board_dim // 2 if board_dim % 2 == 0 else board_dim // 2 + 1
 
-        for i in range(1, nr_iterations): # Para ignorar a fronteira exterior, essa já foi tratada
-            # Apply to the first row of the current border
-            for col in range(board_dim):
-                self.check_neighbors(i, col)
-
-            # Apply to the last row of the current border               #REPETIDO
-            for col in range(board_dim):
-                self.check_neighbors(board_dim-1-i, col)
-
-            # Apply to the first column of the current border
-            for row in range(board_dim):
-                self.check_neighbors(row, i)
-
-            # Apply to the last column of the current border
-            for row in range(1, board_dim - 1):
-                self.check_neighbors(row, board_dim-1-i)
-
+        
 
 
     def generate_actions(self):
         """Faz uma interpretação do estado atual do tabuleiro e gera ações possíveis."""
-        possible_actions = []
+        possible_actions = {}
         board = self.get_board()
         board_dim = len(board.grid)
 
@@ -200,45 +195,51 @@ class PipeManiaState:
         
         for row in range(len(self.board.grid)):
             for col in range(len(self.board.grid[0])):
+
                 piece = self.board.get_value(row, col)
+                current_key = (row, col)
+                current_actions = []
                 #print("Coordenadas: (", row, ",", col, ") Peça atual: ", piece)
 
                 if board.is_permanent(row, col):
                     pass
                 elif row == 0 and col == 0 and piece[0] == "F":
                     #print("elif 1")
-                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_first_row_first_col[piece[1]]])
                 elif row == 0 and col != 0 and col != board_dim - 1:
                     #print("elif 2")
-                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_first_row_not_first_last_col[piece[0]][piece[1]]])
                 elif row == 0 and col == board_dim - 1 and piece[0] == "F":
                     #print("elif 3")
-                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_first_row_last_col[piece[1]]])
                 elif row != 0 and row != board_dim - 1 and col == 0:
                     #print("elif 4")
-                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_not_first_last_row_first_col[piece[0]][piece[1]]])
                 elif row == board_dim - 1 and col == 0 and piece[0] == "F":
                     #print("elif 5")
-                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_last_row_first_col[piece[1]]])
                 elif row != 0 and row != board_dim - 1 and col == board_dim - 1:
                     #print("elif 6")
-                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_not_first_last_row_last_col[piece[0]][piece[1]]])
                 elif row == board_dim - 1 and col != 0 and col != board_dim - 1:
-                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_last_row_not_first_last_col[piece[0]][piece[1]]])
                 elif row == board_dim - 1 and col == board_dim - 1 and piece[0] == "F":
                     #print("elif 7")
-                    possible_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
                                             for new_orientation in rotation_mappings_last_row_last_col[piece[1]]])
                 else:
                     #print("else")
-                    possible_actions.extend([(row, col, rotation) for rotation in range(1, 4)])  # Add 3 (all) possible rotations
+                    current_actions.extend([(row, col, rotation) for rotation in range(1, 4)])  # Add 3 (all) possible rotations
+
+                if current_actions:
+                    possible_actions[current_key] = [current_actions]
 
         return self.check_neighbors(possible_actions)
 
@@ -270,6 +271,37 @@ class Board:
             return self.grid[row][col]
         else:
             return None
+
+    def adjacent_vertical_values(self, row: int, col: int) -> Tuple[str,str]:
+        """Devolve os valores imediatamente acima e abaixo,
+        respectivamente."""
+        if self.is_grid_index(row, col):
+            return self.get_value(row - 1, col), self.get_value(row + 1, col)
+        else:
+            return None # ou temos de pôr (None, None) ? caso a peça não exista
+
+    def adjacent_horizontal_values(self, row: int, col: int) -> Tuple[str,str]:
+        """Devolve os valores imediatamente à esquerda e à direita,
+        respectivamente."""
+        if self.is_grid_index(row, col):
+            return self.get_value(row, col - 1), self.get_value(row, col + 1)
+        else:
+            return None # ou temos de pôr (None, None) ? caso a peça não exista
+
+    @staticmethod
+    def parse_instance():
+        """Lê o test do standard input (stdin) que é passado como argumento
+        e retorna uma instância da classe Board."""
+
+        grid = []
+        first_line = sys.stdin.readline().split() # Lê a primeira linha para obter o tamanho da grelha
+        n = len(first_line)
+        grid.append(first_line)  # Adiciona a primeira linha à grelha
+        for _ in range(n-1):     # Assegura que o input é n x n
+            row = sys.stdin.readline().split()
+            grid.append(row)
+
+        return Board(grid)
 
     def get_pipes(self, piece_type: chr) -> dict:
         """Retorna o dicionário das saídas de água da peça especificada."""
@@ -319,9 +351,9 @@ class Board:
         pieces_to_remove = []
 
         for piece, water_pipes in water_pipes_dict.items():
-            # print(current_piece)
-            # print(piece_water_pipes)
-            # print(water_pipes)
+            print(current_piece)
+            print(piece_water_pipes)
+            print(water_pipes)
             for i in range(0,4):
                 if piece_water_pipes[i] == -1:
                     continue
@@ -329,15 +361,15 @@ class Board:
                     pieces_to_remove.append(piece)
                     break
 
-        # print(pieces_to_remove)
-        # print(water_pipes_dict.keys())
+        print(pieces_to_remove)
+        print(water_pipes_dict.keys())
 
 
         # Remove as peças que devem ser retiradas do dicionário
         for piece in pieces_to_remove:
             water_pipes_dict.pop(piece)
 
-        # print(water_pipes_dict.keys())
+        print(water_pipes_dict.keys())
 
         return list(water_pipes_dict.keys())
 
@@ -423,36 +455,7 @@ class Board:
         piece = self.get_value(row, col)
         return piece.islower()
 
-    def adjacent_vertical_values(self, row: int, col: int) -> (str, str):
-        """Devolve os valores imediatamente acima e abaixo,
-        respectivamente."""
-        if self.is_grid_index(row, col):
-            return self.get_value(row - 1, col), self.get_value(row + 1, col)
-        else:
-            return None # ou temos de pôr (None, None) ? caso a peça não exista
-
-    def adjacent_horizontal_values(self, row: int, col: int) -> (str, str):
-        """Devolve os valores imediatamente à esquerda e à direita,
-        respectivamente."""
-        if self.is_grid_index(row, col):
-            return self.get_value(row, col - 1), self.get_value(row, col + 1)
-        else:
-            return None # ou temos de pôr (None, None) ? caso a peça não exista
-
-    @staticmethod
-    def parse_instance():
-        """Lê o test do standard input (stdin) que é passado como argumento
-        e retorna uma instância da classe Board."""
-
-        grid = []
-        first_line = sys.stdin.readline().split() # Lê a primeira linha para obter o tamanho da grelha
-        n = len(first_line)
-        grid.append(first_line)  # Adiciona a primeira linha à grelha
-        for _ in range(n-1):     # Assegura que o input é n x n
-            row = sys.stdin.readline().split()
-            grid.append(row)
-
-        return Board(grid)
+    
 
 
     def calculate_rotation(self, start_orient: str, end_orient: str) -> int:
@@ -757,7 +760,7 @@ class PipeMania(Problem):
 
 if __name__ == "__main__":
 
-    
+    """
     board = Board.parse_instance()
     problem = PipeMania(board)
     problem.change_borders()
@@ -766,26 +769,20 @@ if __name__ == "__main__":
     goal_node = depth_first_tree_search(problem)
     # Verificar se foi atingida a solução
     goal_node.state.get_board().print_grid()
-    
-
-
     """
+
+
+    
     board = Board.parse_instance()
     problem = PipeMania(board)
     s0 = PipeManiaState(board)
     problem.change_borders()
     print(problem.actions(s0))
-    board.print_grid()
-    s2 = problem.result(s0, (0, 1, 2))
-    s6 = problem.result(s2, (1, 1, 3))
-    s8 = problem.result(s6, (2, 0, 2)) # anti-clockwise (exemplo de uso)
-    s9 = problem.result(s8, (2, 1, 2))
-    s11 = problem.result(s9, (2, 2, 3))
-    print("Is goal?", problem.goal_test(s2))
-    print("Is goal?", problem.goal_test(s11))
+    board.print_grid_debug()
+    print("Is goal?", problem.goal_test(s0))
     print("Solution:")
-    s11.get_board().print_grid()
-    """
+    s0.get_board().print_grid()
+    
 
     
 
