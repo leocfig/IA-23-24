@@ -85,9 +85,15 @@ class PipeManiaState:
     def check_neighbors(self, unfiltered_actions: dict):
         """"""
 
+        print("unfiltered_actions:")
+        for piece_key in unfiltered_actions:
+            print("piece_key:", piece_key)
+            print("value:", unfiltered_actions[piece_key])
+
         board = self.get_board()
         board_dim = len(board.grid)
         all_actions = []
+        actions_to_remove = []
 
         for row in range(board_dim):
             for col in range(board_dim):
@@ -128,20 +134,39 @@ class PipeManiaState:
                 possible_configs = board.find_matching_pieces(piece, piece_water_pipes)
 
                 for rotated_piece in possible_configs:
-                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], rotated_piece[1]))])
+                    rotation = self.board.calculate_rotation(piece[1], rotated_piece[1])
+                    if rotation:    # Se a rotação der 0, a peça já está na posição correta e a ação não é adicionada
+                        current_actions.extend([(row, col, rotation)])
                 
-                if current_actions:
-                    if current_key in unfiltered_actions:
-                        unfiltered_actions[current_key].append(current_actions)
-                    else:
-                        unfiltered_actions[current_key] = [current_actions]
+                if current_key in unfiltered_actions:
+                    unfiltered_actions[current_key].append(current_actions)
+                else:
+                    unfiltered_actions[current_key] = [current_actions]
 
+                print("After interseção:")
+                if len(unfiltered_actions[current_key]) == 1:
+                    unfiltered_actions[current_key] = unfiltered_actions[current_key][0]
+                elif len(unfiltered_actions[current_key]) == 2:
+                    unfiltered_actions[current_key] = list(set(unfiltered_actions[current_key][0]).intersection(unfiltered_actions[current_key][1]))
+
+                print("piece_key:", current_key)
+                print("value:", unfiltered_actions[current_key])
+                # Se apenas houver uma ação possível tornamos a peça permanente
+                if len(unfiltered_actions[current_key]) in {0,1}:
+                    if len(unfiltered_actions[current_key]) == 1:
+                        board.rotate_piece(current_key[0], current_key[1], unfiltered_actions[current_key][0][2])
+                    actions_to_remove.append(current_key)
+                    board.make_piece_permanent(current_key[0], current_key[1])
+
+
+        print("unfiltered_actions after double for:")
         for piece_key in unfiltered_actions:
-            if len(unfiltered_actions[piece_key]) == 2:
-                unfiltered_actions[piece_key] = list(set(unfiltered_actions[piece_key][0]).intersection(unfiltered_actions[piece_key][1]))
-            if len(unfiltered_actions[piece_key]) == 1:
-                board.rotate_piece(piece_key[0], piece_key[1], unfiltered_actions[piece_key][0][2])
-                board.make_piece_permanent(piece_key[0], piece_key[1])
+            print("piece_key:", piece_key)
+            print("value:", unfiltered_actions[piece_key])
+
+        # Remove as ações das peças que se tornaram permanentes
+        for piece_key in actions_to_remove:
+            unfiltered_actions.pop(piece_key)
 
         for actions in unfiltered_actions.values():
             all_actions.extend(actions)
@@ -351,9 +376,9 @@ class Board:
         pieces_to_remove = []
 
         for piece, water_pipes in water_pipes_dict.items():
-            print(current_piece)
-            print(piece_water_pipes)
-            print(water_pipes)
+            #print(current_piece)
+            # print(piece_water_pipes)
+            # print(water_pipes)
             for i in range(0,4):
                 if piece_water_pipes[i] == -1:
                     continue
@@ -361,15 +386,15 @@ class Board:
                     pieces_to_remove.append(piece)
                     break
 
-        print(pieces_to_remove)
-        print(water_pipes_dict.keys())
+        # print(pieces_to_remove)
+        # print(water_pipes_dict.keys())
 
 
-        # Remove as peças que devem ser retiradas do dicionário
+        # Remove as peças que devem ser retiradas
         for piece in pieces_to_remove:
             water_pipes_dict.pop(piece)
 
-        print(water_pipes_dict.keys())
+        #print(water_pipes_dict.keys())
 
         return list(water_pipes_dict.keys())
 
