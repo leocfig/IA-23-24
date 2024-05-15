@@ -6,6 +6,8 @@
 # 106157 Leonor Costa Figueira
 # 106322 Raquel dos Anjos Santos Caldeira Rodrigues
 
+nr_voltas = 0
+
 import sys
 
 from search import (
@@ -94,6 +96,15 @@ class PipeManiaState:
         board_dim = len(board.grid)
         all_actions = []
         actions_to_remove = []
+        permanent_pieces = 0
+
+        for row in range(board_dim):
+            for col in range(board_dim):
+                if board.is_permanent(row, col):
+                    permanent_pieces += 1
+        
+        not_permanent_pieces = board_dim * board_dim - permanent_pieces
+
 
         for row in range(board_dim):
             for col in range(board_dim):
@@ -104,7 +115,7 @@ class PipeManiaState:
                 current_key = (row, col)
                 current_actions = []
 
-                # Define the indices of the neighboring positions
+                # Define os índices das peças vizinhas
                 neighbor = [
                     (row - 1, col),  # Cima
                     (row, col + 1),  # Direita
@@ -119,11 +130,9 @@ class PipeManiaState:
                 piece = board.get_value(row, col)
 
                 for i in range(0, 4):
-                    
                     neighbor_row, neighbor_col = neighbor[i]
 
                     if board.is_grid_index(neighbor_row, neighbor_col):
-
                         neighbor_piece = board.get_value(neighbor_row, neighbor_col)
                         neighbor_permanent = board.is_permanent(neighbor_row, neighbor_col)
                         
@@ -135,22 +144,28 @@ class PipeManiaState:
 
                 for rotated_piece in possible_configs:
                     rotation = self.board.calculate_rotation(piece[1], rotated_piece[1])
-                    if rotation:    # Se a rotação der 0, a peça já está na posição correta e a ação não é adicionada
-                        current_actions.extend([(row, col, rotation)])
+                    #if rotation:    # Se a rotação der 0, a peça já está na posição correta e a ação não é adicionada
+                    current_actions.extend([(row, col, rotation)])
+                
+                if row == 1 and col == 2:
+                    print("current_actions da (1,2):")
+                    print(current_actions)
                 
                 if current_key in unfiltered_actions:
                     unfiltered_actions[current_key].append(current_actions)
                 else:
                     unfiltered_actions[current_key] = [current_actions]
 
-                print("After interseção:")
+                print("two lists:")
+                for piece_key in unfiltered_actions:
+                    print("piece_key:", piece_key)
+                    print("value:", unfiltered_actions[piece_key])
+
                 if len(unfiltered_actions[current_key]) == 1:
                     unfiltered_actions[current_key] = unfiltered_actions[current_key][0]
                 elif len(unfiltered_actions[current_key]) == 2:
                     unfiltered_actions[current_key] = list(set(unfiltered_actions[current_key][0]).intersection(unfiltered_actions[current_key][1]))
 
-                print("piece_key:", current_key)
-                print("value:", unfiltered_actions[current_key])
                 # Se apenas houver uma ação possível tornamos a peça permanente
                 if len(unfiltered_actions[current_key]) in {0,1}:
                     if len(unfiltered_actions[current_key]) == 1:
@@ -158,11 +173,11 @@ class PipeManiaState:
                     actions_to_remove.append(current_key)
                     board.make_piece_permanent(current_key[0], current_key[1])
 
+                    # Quando
+                    if not_permanent_pieces == 1:
+                        all_actions.append((0, 0, 0))
+                    not_permanent_pieces -= 1
 
-        print("unfiltered_actions after double for:")
-        for piece_key in unfiltered_actions:
-            print("piece_key:", piece_key)
-            print("value:", unfiltered_actions[piece_key])
 
         # Remove as ações das peças que se tornaram permanentes
         for piece_key in actions_to_remove:
@@ -170,8 +185,16 @@ class PipeManiaState:
 
         for actions in unfiltered_actions.values():
             all_actions.extend(actions)
+        
+        print("after intersection:")
+        for piece_key in unfiltered_actions:
+            print("piece_key:", piece_key)
+            print("value:", unfiltered_actions[piece_key])
+            
+        #print(all_actions)
 
-        return all_actions
+        return [(0,4,0)]
+        #return all_actions
 
 
     def update_neighbors(self):
@@ -200,10 +223,10 @@ class PipeManiaState:
 
         rotation_mappings_not_first_last_row_first_col = {
             'F': {'C': ['B', 'D'], 'E': ['B', 'C', 'D'], 'B': ['C', 'D'], 'D': ['B', 'C']},
-            'V': {'C': ['B', 'D'], 'E': ['B', 'D'], 'B': ['E'], 'D': ['B']}
+            'V': {'C': ['B', 'D'], 'E': ['B', 'D'], 'B': ['D'], 'D': ['B']}
         }
 
-        rotation_mappings_last_row_first_col = {'C': ['B'], 'E': ['C', 'D'], 'B': ['C', 'D'], 'D': ['C']}
+        rotation_mappings_last_row_first_col = {'C': ['D'], 'E': ['C', 'D'], 'B': ['C', 'D'], 'D': ['C']}
 
         rotation_mappings_not_first_last_row_last_col = {
             'F': {'C': ['B', 'E'], 'E': ['B', 'C'], 'B': ['C', 'E'], 'D': ['B', 'C', 'E']},
@@ -261,6 +284,7 @@ class PipeManiaState:
                                             for new_orientation in rotation_mappings_last_row_last_col[piece[1]]])
                 else:
                     #print("else")
+                    # LIMITAR PEÇAS L...
                     current_actions.extend([(row, col, rotation) for rotation in range(1, 4)])  # Add 3 (all) possible rotations
 
                 if current_actions:
@@ -707,12 +731,20 @@ class PipeMania(Problem):
         return new_state
 
     def goal_test(self, state: PipeManiaState):
+        global nr_voltas
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas de acordo com as regras do problema."""
 
         board = state.get_board()
         board_dim = len(board.grid)
+        #board.print_grid_debug()
+        if nr_voltas == 0:
+            board.print_grid_debug()
+        if nr_voltas == 1:
+            board.print_grid_debug()
+            exit()
+        nr_voltas += 1
 
         for row in range(board_dim):
             for col in range(board_dim):
@@ -737,23 +769,6 @@ class PipeMania(Problem):
                 node_id = row * board_dim + col
                 left_neighbor_id = row * board_dim + col - 1
                 above_neighbor_id = (row - 1) * board_dim + col
-
-                #print("node_id:",  node_id)
-                #print("left_piece is not None:")
-                #print(left_piece is not None)
-
-                #print("above_piece is not None:")
-                #print(above_piece is not None)
-
-                #if left_piece is not None:
-                    #print("board.check_connections entre current e left")
-                    #print(board.check_connections(board.get_water_pipes(current_piece),
-                        #board.get_water_pipes(left_piece), True))
-
-                # if above_piece is not None:
-                #     print("board.check_connections entre current e above")
-                #     print(board.check_connections(board.get_water_pipes(current_piece),
-                #         board.get_water_pipes(above_piece), False))
 
                 if left_piece is not None and (board.check_connections(board.get_water_pipes(current_piece),
                                                                       board.get_water_pipes(left_piece), 1) == 1):
@@ -785,7 +800,7 @@ class PipeMania(Problem):
 
 if __name__ == "__main__":
 
-    """
+    
     board = Board.parse_instance()
     problem = PipeMania(board)
     problem.change_borders()
@@ -794,19 +809,19 @@ if __name__ == "__main__":
     goal_node = depth_first_tree_search(problem)
     # Verificar se foi atingida a solução
     goal_node.state.get_board().print_grid()
-    """
+    
 
 
     
-    board = Board.parse_instance()
-    problem = PipeMania(board)
-    s0 = PipeManiaState(board)
-    problem.change_borders()
-    print(problem.actions(s0))
-    board.print_grid_debug()
-    print("Is goal?", problem.goal_test(s0))
-    print("Solution:")
-    s0.get_board().print_grid()
+    # board = Board.parse_instance()
+    # problem = PipeMania(board)
+    # s0 = PipeManiaState(board)
+    # problem.change_borders()
+    # print(problem.actions(s0))
+    # board.print_grid_debug()
+    # print("Is goal?", problem.goal_test(s0))
+    # print("Solution:")
+    # s0.get_board().print_grid()
     
 
     
