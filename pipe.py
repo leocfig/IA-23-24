@@ -6,7 +6,7 @@
 # 106157 Leonor Costa Figueira
 # 106322 Raquel dos Anjos Santos Caldeira Rodrigues
 
-nr_voltas = 0
+# nr_voltas = 0
 
 import sys
 
@@ -87,10 +87,10 @@ class PipeManiaState:
     def check_neighbors(self, unfiltered_actions: dict):
         """"""
 
-        print("unfiltered_actions:")
-        for piece_key in unfiltered_actions:
-            print("piece_key:", piece_key)
-            print("value:", unfiltered_actions[piece_key])
+        # print("unfiltered_actions:")
+        # for piece_key in unfiltered_actions:
+        #     print("piece_key:", piece_key)
+        #     print("value:", unfiltered_actions[piece_key])
 
         board = self.get_board()
         board_dim = len(board.grid)
@@ -147,19 +147,15 @@ class PipeManiaState:
                     #if rotation:    # Se a rotação der 0, a peça já está na posição correta e a ação não é adicionada
                     current_actions.extend([(row, col, rotation)])
                 
-                if row == 1 and col == 2:
-                    print("current_actions da (1,2):")
-                    print(current_actions)
-                
                 if current_key in unfiltered_actions:
                     unfiltered_actions[current_key].append(current_actions)
                 else:
                     unfiltered_actions[current_key] = [current_actions]
 
-                print("two lists:")
-                for piece_key in unfiltered_actions:
-                    print("piece_key:", piece_key)
-                    print("value:", unfiltered_actions[piece_key])
+                # print("two lists:")
+                # for piece_key in unfiltered_actions:
+                #     print("piece_key:", piece_key)
+                #     print("value:", unfiltered_actions[piece_key])
 
                 if len(unfiltered_actions[current_key]) == 1:
                     unfiltered_actions[current_key] = unfiltered_actions[current_key][0]
@@ -188,17 +184,18 @@ class PipeManiaState:
                 # Descartar as ações que mantêm as peças com a mesma orientação
                 if action[2] != 0:
                     all_actions.append(action)
+            #all_actions.extend(actions)
 
         
-        print("after intersection:")
-        for piece_key in unfiltered_actions:
-            print("piece_key:", piece_key)
-            print("value:", unfiltered_actions[piece_key])
+        # print("after intersection:")
+        # for piece_key in unfiltered_actions:
+        #     print("piece_key:", piece_key)
+        #     print("value:", unfiltered_actions[piece_key])
             
-        #print(all_actions)
+        print(all_actions)
 
-        return [(0,4,0)]
-        #return all_actions
+        # return [(0,4,0)]
+        return all_actions
 
 
     def update_neighbors(self):
@@ -296,7 +293,10 @@ class PipeManiaState:
                 else:
                     #print("else")
                     # LIMITAR PEÇAS L...
-                    current_actions.extend([(row, col, rotation) for rotation in range(0, 4)])  # Add 3 (all) possible rotations
+                    if piece[0] == "L":
+                        current_actions.extend([(row, col, rotation) for rotation in range(0, 2)])  # Add 2 possible rotations
+                    else:
+                        current_actions.extend([(row, col, rotation) for rotation in range(0, 4)])  # Add 4 (all) possible rotations
 
                 if current_actions:
                     possible_actions[current_key] = [current_actions]
@@ -732,7 +732,10 @@ class PipeMania(Problem):
         #if action in self.actions(state):   #MAYBE?
 
         current_board = state.get_board()
+        # print("ACTION")
+        # print(action)
         row, col, rotation = action
+        
         new_board = current_board.copy()
         new_board.rotate_piece(row, col, rotation)
         new_board.make_piece_permanent(row, col)
@@ -742,7 +745,7 @@ class PipeMania(Problem):
         return new_state
 
     def goal_test(self, state: PipeManiaState):
-        global nr_voltas
+        # global nr_voltas
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas de acordo com as regras do problema."""
@@ -750,12 +753,12 @@ class PipeMania(Problem):
         board = state.get_board()
         board_dim = len(board.grid)
         #board.print_grid_debug()
-        if nr_voltas == 0:
-            board.print_grid_debug()
-        if nr_voltas == 1:
-            board.print_grid_debug()
-            exit()
-        nr_voltas += 1
+        # if nr_voltas == 0:
+        #     board.print_grid_debug()
+        # if nr_voltas == 1:
+        #     board.print_grid_debug()
+        #     exit()
+        # nr_voltas += 1
 
         for row in range(board_dim):
             for col in range(board_dim):
