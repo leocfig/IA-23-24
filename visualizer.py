@@ -7,7 +7,7 @@ all_pipes = ['FB', 'LV', 'VC', 'VE', 'FE', 'FC', 'VD', 'BB', 'LH', 'BE', 'BD', '
 def visualizer(input_file):
     with open(input_file, 'r') as f:
         # Transforms the input into a grid for example, [["FC","VC"],["VC","FC"]]
-        grid = [line.strip().split("\t") for line in f]
+        grid = [line.strip().split(" ") for line in f]
         path_to_images = 'images/'
         unique_images = {}
         common_size = (300, 300)  
@@ -20,7 +20,7 @@ def visualizer(input_file):
                 unique_images[img_code] = np.array(resized_image)
 
         #Concatenate the arrays of images to form the final image and save it to Grid_Image
-        row_images = [np.concatenate([unique_images[img_code] for img_code in row], axis=1) for row in grid]
+        row_images = [np.concatenate([unique_images[img_code.upper()] for img_code in row], axis=1) for row in grid]
         final_image = np.concatenate(row_images, axis=0)
         final_image_obj = Image.fromarray(final_image)
         final_image_obj.save(f'Grid_Image.png')

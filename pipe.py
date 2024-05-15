@@ -108,13 +108,7 @@ class PipeManiaState:
 
         for row in range(board_dim):
             for col in range(board_dim):
-
-                if board.is_permanent(row, col):
-                    continue
-
-                current_key = (row, col)
-                current_actions = []
-
+                                
                 # Define os índices das peças vizinhas
                 neighbor = [
                     (row - 1, col),  # Cima
@@ -122,12 +116,35 @@ class PipeManiaState:
                     (row + 1, col),  # Baixo
                     (row, col - 1),  # Esquerda
                 ]
-                
+
                 # Vetor com saídas de água da peça atual que será
                 # construído através das peças vizinhas já permanentes
                 piece_water_pipes = [-1] * 4
 
                 piece = board.get_value(row, col)
+
+                if board.is_permanent(row, col):        # Dúvida: por ciclo for para ver imcompatibilidade entre peças vizinhas?
+                    for i in range(0, 4):
+                        neighbor_row, neighbor_col = neighbor[i]
+
+                        if board.is_grid_index(neighbor_row, neighbor_col):
+                            neighbor_piece = board.get_value(neighbor_row, neighbor_col)
+                            neighbor_permanent = board.is_permanent(neighbor_row, neighbor_col)
+                            
+                            if neighbor_permanent:
+                                piece_water_pipes[i] = board.get_water_pipes(neighbor_piece)[(i + 2) % len(neighbor)]
+
+                    piece = piece.upper()
+                    possible_configs = board.find_matching_pieces(piece, piece_water_pipes)
+                    if len(possible_configs) == 0:
+                        print("VIZINHOS PERMANENTES INCOMPATÍVEIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                        return []
+                    continue
+
+                current_key = (row, col)
+                current_actions = []
+
+                
 
                 for i in range(0, 4):
                     neighbor_row, neighbor_col = neighbor[i]
@@ -143,7 +160,8 @@ class PipeManiaState:
                 possible_configs = board.find_matching_pieces(piece, piece_water_pipes)
 
                 # Significa que o estado tem um tabuleiro errado
-                if possible_configs == 0:
+                if len(possible_configs) == 0:
+                    print("ENTROU AQUI E DESCARTOU RAMO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                     # O ramo do nó com este estado deve ser descartado
                     return []
 
@@ -762,14 +780,15 @@ class PipeMania(Problem):
         board = state.get_board()
 
         board_dim = len(board.grid)
-        #board.print_grid_debug()
+        print("DEBUG:")
+        board.print_grid_debug()
         # if nr_voltas == 0:
         #     board.print_grid_debug()
         # if nr_voltas == 1:
         #     board.print_grid_debug()
         #     exit()
         # nr_voltas += 1
-        board.print_grid_debug()
+        #board.print_grid_debug()
 
         for row in range(board_dim):
             for col in range(board_dim):
