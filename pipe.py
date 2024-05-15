@@ -142,6 +142,11 @@ class PipeManiaState:
 
                 possible_configs = board.find_matching_pieces(piece, piece_water_pipes)
 
+                # Significa que o estado tem um tabuleiro errado
+                if possible_configs == 0:
+                    # O ramo do nó com este estado deve ser descartado
+                    return []
+
                 for rotated_piece in possible_configs:
                     rotation = self.board.calculate_rotation(piece[1], rotated_piece[1])
                     #if rotation:    # Se a rotação der 0, a peça já está na posição correta e a ação não é adicionada
@@ -167,6 +172,8 @@ class PipeManiaState:
                 if len(unfiltered_actions[current_key]) == 1:
                     board.rotate_piece(current_key[0], current_key[1], unfiltered_actions[current_key][0][2])
                     actions_to_remove.append(current_key)
+                    # print("PEÇA QUE ESTAMOS A TORNAR PERMANENTE:")
+                    # print(row, col)
                     board.make_piece_permanent(current_key[0], current_key[1])
 
                     # Quando se colocou permanente a última peça que faltava 
@@ -732,12 +739,14 @@ class PipeMania(Problem):
         #if action in self.actions(state):   #MAYBE?
 
         current_board = state.get_board()
-        # print("ACTION")
-        # print(action)
+        #print("ACTION")
+        #print(action)
         row, col, rotation = action
         
         new_board = current_board.copy()
         new_board.rotate_piece(row, col, rotation)
+        #print("PEÇA QUE ESCOLHEMOS NO RAMO COMO PERMNANTE:")
+        #print(row, col)
         new_board.make_piece_permanent(row, col)
 
         new_state = PipeManiaState(new_board)
@@ -751,6 +760,7 @@ class PipeMania(Problem):
         estão preenchidas de acordo com as regras do problema."""
 
         board = state.get_board()
+
         board_dim = len(board.grid)
         #board.print_grid_debug()
         # if nr_voltas == 0:
@@ -759,6 +769,7 @@ class PipeMania(Problem):
         #     board.print_grid_debug()
         #     exit()
         # nr_voltas += 1
+        board.print_grid_debug()
 
         for row in range(board_dim):
             for col in range(board_dim):
