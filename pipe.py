@@ -167,13 +167,13 @@ class PipeManiaState:
                     unfiltered_actions[current_key] = list(set(unfiltered_actions[current_key][0]).intersection(unfiltered_actions[current_key][1]))
 
                 # Se apenas houver uma ação possível tornamos a peça permanente
-                if len(unfiltered_actions[current_key]) in {0,1}:
-                    if len(unfiltered_actions[current_key]) == 1:
-                        board.rotate_piece(current_key[0], current_key[1], unfiltered_actions[current_key][0][2])
+                #if len(unfiltered_actions[current_key]) in {0,1}:
+                if len(unfiltered_actions[current_key]) == 1:
+                    board.rotate_piece(current_key[0], current_key[1], unfiltered_actions[current_key][0][2])
                     actions_to_remove.append(current_key)
                     board.make_piece_permanent(current_key[0], current_key[1])
 
-                    # Quando
+                    # Quando se colocou permanente a última peça que faltava 
                     if not_permanent_pieces == 1:
                         all_actions.append((0, 0, 0))
                     not_permanent_pieces -= 1
@@ -184,7 +184,11 @@ class PipeManiaState:
             unfiltered_actions.pop(piece_key)
 
         for actions in unfiltered_actions.values():
-            all_actions.extend(actions)
+            for action in actions:
+                # Descartar as ações que mantêm as peças com a mesma orientação
+                if action[2] != 0:
+                    all_actions.append(action)
+
         
         print("after intersection:")
         for piece_key in unfiltered_actions:
@@ -212,34 +216,41 @@ class PipeManiaState:
         board = self.get_board()
         board_dim = len(board.grid)
 
-        rotation_mappings_first_row_first_col = {'C': ['B', 'D'], 'E': ['B', 'D'], 'B': ['D'], 'D': ['B']}
+        # Canto superior esquerdo
+        rotation_mappings_first_row_first_col = {'C': ['B', 'D'], 'E': ['B', 'D'], 'B': ['B', 'D'], 'D': ['B', 'D']}
 
+        # Primeira linha
         rotation_mappings_first_row_not_first_last_col = {
-            'F': {'C': ['B', 'E', 'D'], 'E': ['B', 'D'], 'B': ['E', 'D'], 'D': ['B', 'E']},
-            'V': {'C': ['B', 'E'], 'E': ['B'], 'B': ['E'], 'D': ['B', 'E']}
+            'F': {'C': ['B', 'E', 'D'], 'E': ['B', 'E', 'D'], 'B': ['B', 'E', 'D'], 'D': ['B', 'E', 'D']},
+            'V': {'C': ['B', 'E'], 'E': ['B', 'E'], 'B': ['B', 'E'], 'D': ['B', 'E']}
         }
 
-        rotation_mappings_first_row_last_col = {'C': ['B', 'E'], 'E': ['B'], 'B': ['E'], 'D': ['B', 'E']}
+        # Canto superior direito
+        rotation_mappings_first_row_last_col = {'C': ['B', 'E'], 'E': ['B', 'E'], 'B': ['B', 'E'], 'D': ['B', 'E']}
 
+        # Primeira coluna
         rotation_mappings_not_first_last_row_first_col = {
-            'F': {'C': ['B', 'D'], 'E': ['B', 'C', 'D'], 'B': ['C', 'D'], 'D': ['B', 'C']},
-            'V': {'C': ['B', 'D'], 'E': ['B', 'D'], 'B': ['D'], 'D': ['B']}
+            'F': {'C': ['B', 'C', 'D'], 'E': ['B', 'C', 'D'], 'B': ['B', 'C', 'D'], 'D': ['B', 'C', 'D']},
+            'V': {'C': ['B', 'D'], 'E': ['B', 'D'], 'B': ['B', 'D'], 'D': ['B', 'D']}
         }
 
-        rotation_mappings_last_row_first_col = {'C': ['D'], 'E': ['C', 'D'], 'B': ['C', 'D'], 'D': ['C']}
+        # Canto inferior esquerdo
+        rotation_mappings_last_row_first_col = {'C': ['C', 'D'], 'E': ['C', 'D'], 'B': ['C', 'D'], 'D': ['C', 'D']}
 
+        # Última coluna
         rotation_mappings_not_first_last_row_last_col = {
-            'F': {'C': ['B', 'E'], 'E': ['B', 'C'], 'B': ['C', 'E'], 'D': ['B', 'C', 'E']},
-            'V': {'C': ['E'], 'E': ['C'], 'B': ['C', 'E'], 'D': ['C', 'E']}
+            'F': {'C': ['B', 'C', 'E'], 'E': ['B', 'C', 'E'], 'B': ['B', 'C', 'E'], 'D': ['B', 'C', 'E']},
+            'V': {'C': ['C', 'E'], 'E': ['C', 'E'], 'B': ['C', 'E'], 'D': ['C', 'E']}
         }
 
+        # Última linha
         rotation_mappings_last_row_not_first_last_col = {
-            'F': {'C': ['E', 'D'], 'E': ['C', 'D'], 'B': ['C', 'D', 'E'], 'D': ['C', 'E']},
-            'V': {'C': ['D'], 'E': ['C', 'D'], 'B': ['C', 'D'], 'D': ['C']}
+            'F': {'C': ['C', 'E', 'D'], 'E': ['C', 'E', 'D'], 'B': ['C', 'E', 'D'], 'D': ['C', 'E', 'D']},
+            'V': {'C': ['C', 'D'], 'E': ['C', 'D'], 'B': ['C', 'D'], 'D': ['C', 'D']}
         }
 
-        rotation_mappings_last_row_last_col = {'C': ['E'], 'E': ['C'], 'B': ['C', 'E'], 'D': ['C', 'E']}
-
+        # Canto inferior direito
+        rotation_mappings_last_row_last_col = {'C': ['C', 'E'], 'E': ['C', 'E'], 'B': ['C', 'E'], 'D': ['C', 'E']}
         
         for row in range(len(self.board.grid)):
             for col in range(len(self.board.grid[0])):
@@ -285,7 +296,7 @@ class PipeManiaState:
                 else:
                     #print("else")
                     # LIMITAR PEÇAS L...
-                    current_actions.extend([(row, col, rotation) for rotation in range(1, 4)])  # Add 3 (all) possible rotations
+                    current_actions.extend([(row, col, rotation) for rotation in range(0, 4)])  # Add 3 (all) possible rotations
 
                 if current_actions:
                     possible_actions[current_key] = [current_actions]
