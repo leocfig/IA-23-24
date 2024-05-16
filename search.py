@@ -104,7 +104,7 @@ class Node:
         #print(action)
         next_state = problem.result(self.state, action)
         next_node = Node(next_state, self, action, problem.path_cost(self.path_cost, self.state, action, next_state))
-        print("NEXT_NODE:", next_node.node_id, "depth: ", next_node.depth, "action: ", next_node.action)
+        #print("NEXT_NODE:", next_node.node_id, "depth: ", next_node.depth, "action: ", next_node.action)
         return next_node
 
     def solution(self):
@@ -215,11 +215,11 @@ def depth_first_tree_search(problem):
         if problem.goal_test(node.state):
             return node
         frontier.extend(node.expand(problem))
-        print("Comprimento da fronteira:")
-        print(len(frontier))
-        print("Ação de nós da fronteira:")
-        for node in frontier:
-            print(node.action)
+        #print("Comprimento da fronteira:")
+        #print(len(frontier))
+        #print("Ação de nós da fronteira:")
+        #for node in frontier:
+            #print(node.action)
     return None
 
 
