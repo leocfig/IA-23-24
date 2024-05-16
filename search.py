@@ -98,7 +98,7 @@ class Node:
 
     def child_node(self, problem, action):
         """[Figure 3.10]"""
-        #print(action)
+        print(action)
         next_state = problem.result(self.state, action)
         next_node = Node(next_state, self, action, problem.path_cost(self.path_cost, self.state, action, next_state))
         return next_node
@@ -208,6 +208,7 @@ def depth_first_tree_search(problem):
 
     while frontier:
         node = frontier.pop()
+        #print(node.state.action)
         if problem.goal_test(node.state):
             return node
         frontier.extend(node.expand(problem))

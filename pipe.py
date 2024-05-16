@@ -124,6 +124,7 @@ class PipeManiaState:
                 piece = board.get_value(row, col)
 
                 if board.is_permanent(row, col):        # Dúvida: por ciclo for para ver imcompatibilidade entre peças vizinhas?
+                    
                     for i in range(0, 4):
                         neighbor_row, neighbor_col = neighbor[i]
 
@@ -163,6 +164,8 @@ class PipeManiaState:
                 if len(possible_configs) == 0:
                     print("ENTROU AQUI E DESCARTOU RAMO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                     # O ramo do nó com este estado deve ser descartado
+                    print("Peça que causou o ramo descartado:")
+                    print(row, col)
                     return []
 
                 for rotated_piece in possible_configs:
@@ -196,7 +199,12 @@ class PipeManiaState:
 
                     # Quando se colocou permanente a última peça que faltava 
                     if not_permanent_pieces == 1:
-                        all_actions.append((0, 0, 0))
+                        #all_actions.append((0, 0, 0))
+                        print("Entrou aqui TEEHEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE!")
+                        board.print_grid_debug()
+                        print("Yoyoyo:")
+                        board.print_grid()
+                        return [(0, 0, 0)]
                     not_permanent_pieces -= 1
 
 
@@ -204,23 +212,29 @@ class PipeManiaState:
         for piece_key in actions_to_remove:
             unfiltered_actions.pop(piece_key)
 
-        for actions in unfiltered_actions.values():
-            for action in actions:
-                # Descartar as ações que mantêm as peças com a mesma orientação
-                if action[2] != 0:
-                    all_actions.append(action)
-            #all_actions.extend(actions)
+        # for actions in unfiltered_actions.values():
+        #     for action in actions:
+        #         # Descartar as ações que mantêm as peças com a mesma orientação
+        #         if action[2] != 0:
+        #             all_actions.append(action)
+        #     #all_actions.extend(actions)
 
         
         # print("after intersection:")
         # for piece_key in unfiltered_actions:
         #     print("piece_key:", piece_key)
         #     print("value:", unfiltered_actions[piece_key])
+
+        for key, value in unfiltered_actions.items():
+            # Retorna o valor da primeira chave existente no dicionário
+            #print(value)
+            return value
             
-        print(all_actions)
+        #print(all_actions)
 
         # return [(0,4,0)]
-        return all_actions
+        #return all_actions
+        print("Passei aqui ya")
 
 
     def update_neighbors(self):
@@ -766,7 +780,6 @@ class PipeMania(Problem):
         #print("PEÇA QUE ESCOLHEMOS NO RAMO COMO PERMNANTE:")
         #print(row, col)
         new_board.make_piece_permanent(row, col)
-
         new_state = PipeManiaState(new_board)
         
         return new_state
@@ -780,8 +793,8 @@ class PipeMania(Problem):
         board = state.get_board()
 
         board_dim = len(board.grid)
-        print("DEBUG:")
-        board.print_grid_debug()
+        #print("DEBUG:")
+        #board.print_grid_debug()
         # if nr_voltas == 0:
         #     board.print_grid_debug()
         # if nr_voltas == 1:
@@ -828,6 +841,7 @@ class PipeMania(Problem):
             #print(graph.subgraph_count())
             return False
 
+        print("PASSOU NO GOAL!")
         return True
 
 
