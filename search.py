@@ -64,7 +64,7 @@ class Problem:
 
 # ______________________________________________________________________________
 
-
+node_id = 0
 class Node:
     """A node in a search tree. Contains a pointer to the parent (the node
     that this is a successor of) and to the actual state for this node. Note
@@ -77,6 +77,9 @@ class Node:
 
     def __init__(self, state, parent=None, action=None, path_cost=0):
         """Create a search tree Node, derived from a parent by an action."""
+        global node_id
+        self.node_id = node_id
+        node_id += 1
         self.state = state
         self.parent = parent
         self.action = action
@@ -98,9 +101,10 @@ class Node:
 
     def child_node(self, problem, action):
         """[Figure 3.10]"""
-        print(action)
+        #print(action)
         next_state = problem.result(self.state, action)
         next_node = Node(next_state, self, action, problem.path_cost(self.path_cost, self.state, action, next_state))
+        print("NEXT_NODE:", next_node.node_id, "depth: ", next_node.depth, "action: ", next_node.action)
         return next_node
 
     def solution(self):
@@ -208,10 +212,14 @@ def depth_first_tree_search(problem):
 
     while frontier:
         node = frontier.pop()
-        #print(node.state.action)
         if problem.goal_test(node.state):
             return node
         frontier.extend(node.expand(problem))
+        print("Comprimento da fronteira:")
+        print(len(frontier))
+        print("Ação de nós da fronteira:")
+        for node in frontier:
+            print(node.action)
     return None
 
 

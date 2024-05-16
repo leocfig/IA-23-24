@@ -139,6 +139,8 @@ class PipeManiaState:
                     possible_configs = board.find_matching_pieces(piece, piece_water_pipes)
                     if len(possible_configs) == 0:
                         print("VIZINHOS PERMANENTES INCOMPATÍVEIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                        print("Peças vizinhas permanentes incompatíveis:")
+                        print(row, col)
                         return []
                     continue
 
@@ -164,6 +166,7 @@ class PipeManiaState:
                 if len(possible_configs) == 0:
                     print("ENTROU AQUI E DESCARTOU RAMO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                     # O ramo do nó com este estado deve ser descartado
+                    board.print_grid_debug()
                     print("Peça que causou o ramo descartado:")
                     print(row, col)
                     return []
@@ -201,9 +204,7 @@ class PipeManiaState:
                     if not_permanent_pieces == 1:
                         #all_actions.append((0, 0, 0))
                         print("Entrou aqui TEEHEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE!")
-                        board.print_grid_debug()
-                        print("Yoyoyo:")
-                        board.print_grid()
+                        #board.print_grid_debug()
                         return [(0, 0, 0)]
                     not_permanent_pieces -= 1
 
@@ -225,9 +226,11 @@ class PipeManiaState:
         #     print("piece_key:", piece_key)
         #     print("value:", unfiltered_actions[piece_key])
 
-        for key, value in unfiltered_actions.items():
+        for value in unfiltered_actions.values():
             # Retorna o valor da primeira chave existente no dicionário
             #print(value)
+            print("ANTES DE RETORNAR AÇÃO:")
+            board.print_grid_debug()
             return value
             
         #print(all_actions)
@@ -235,6 +238,7 @@ class PipeManiaState:
         # return [(0,4,0)]
         #return all_actions
         print("Passei aqui ya")
+        return []
 
 
     def update_neighbors(self):
@@ -793,8 +797,8 @@ class PipeMania(Problem):
         board = state.get_board()
 
         board_dim = len(board.grid)
-        #print("DEBUG:")
-        #board.print_grid_debug()
+        print("DEBUG:")
+        board.print_grid_debug()
         # if nr_voltas == 0:
         #     board.print_grid_debug()
         # if nr_voltas == 1:
@@ -838,7 +842,7 @@ class PipeMania(Problem):
 
         if graph.subgraph_count() > 1:
             #print("graph.subgraph_count")
-            #print(graph.subgraph_count())
+            print(graph.subgraph_count())
             return False
 
         print("PASSOU NO GOAL!")
