@@ -22,11 +22,15 @@ from typing import List, Tuple
 
 
 class Graph:
+    """Classe para representar um grafo com os seus nós e arcos. 
+    Os arcos são armazenados numa lista de adjacências."""
+
     def __init__(self):
+        """Cria um grafo e inicializa a lista de adjacências."""
         self.adjacency_list = {}
 
     def print_edges(self):
-        """Prints the edges of the graph."""
+        """Imprime os arcos do grafo."""
         print(len(self.adjacency_list))
         for vertex, neighbors in self.adjacency_list.items():
             for neighbor in neighbors:
@@ -34,6 +38,7 @@ class Graph:
 
 
     def add_edge(self, u, v):
+        """Adiciona um arco entre dois nós ao grafo."""
         if u not in self.adjacency_list:
             self.adjacency_list[u] = []
         if v not in self.adjacency_list:
@@ -42,16 +47,18 @@ class Graph:
         self.adjacency_list[v].append(u)
 
     def iterative_DFS(self, s, subgraph, visited):
+        """DFS iterativa para encontrar um subgrafo a partir do nó s."""
         stack = [s]
 
         while stack:
             s = stack.pop()
             if s not in visited:
-                subgraph.add(s)  # Add the node to the subgraph
-                visited.add(s)   # Mark the node as visited
+                subgraph.add(s)  # Adiciona o nó ao subgrafo
+                visited.add(s)   # Assinala o nó como visitado
                 stack.extend(self.adjacency_list[s][::-1])
 
     def connected_components(self):
+        """Encontra e retorna os componentes fortemente ligados do grafo."""
         visited = set()
         subgraphs = []
         for node in self.adjacency_list:
@@ -62,14 +69,17 @@ class Graph:
         return subgraphs
 
     def subgraph_count(self):
+        """Retorna o número de subgrafos independentes do grafo."""
         return len(self.connected_components())
 
 
 
 class PipeManiaState:
+    """Classe que armazena um estado do problema PipeMania."""
     state_id = 0
 
     def __init__(self, board):
+        """Cria um estado pipemania, guardando o board correspondente."""
         self.board = board
         self.id = PipeManiaState.state_id
         PipeManiaState.state_id += 1
@@ -86,7 +96,11 @@ class PipeManiaState:
         return isinstance(other, PipeManiaState) and self.board == other.board
 
     def check_neighbors(self, unfiltered_actions: dict):
-        """"""
+        """Método para percorrer o tabuleiro deste estado e devolver possíveis 
+        ações a executar tendo em conta a lista pré-determinada de ações 
+        (unfiltered_actions) e restrições causadas pelas peças vizinhas.
+        À medida que o tabuleiro é percorrido tornam-se imediatamente permanentes
+        as peças que têm apenas uma configuração possível."""
 
         # print("unfiltered_actions:")
         # for piece_key in unfiltered_actions:
@@ -239,115 +253,157 @@ class PipeManiaState:
         # return [(0,4,0)]
         #return all_actions
         #print("Passei aqui ya")
-        return []
+        return []  
 
 
-    def update_neighbors(self):
-        """"""
-        
-        board = self.get_board()
-        board_dim = len(board.grid)
+    def get_rotations(self, row: int, col: int, piece_type: chr) -> List[chr]:
 
-        
+        corner_rotations = {
+        'top_left': {'F': ['B', 'D']},
+        'top_right': {'F': ['B', 'E']},
+        'bottom_left': {'F': ['C', 'D']},
+        'bottom_right': {'F': ['C', 'E']}
+        }
+    
+        border_rotations = {
+            'top': {'F': ['B', 'E', 'D'], 'V': ['B', 'E']},
+            'bottom': {'F': ['C', 'E', 'D'], 'V': ['C', 'D']},
+            'left': {'F': ['B', 'C', 'D'], 'V': ['B', 'D']},
+            'right': {'F': ['B', 'C', 'E'], 'V': ['C', 'E']}
+        }
+
+        board_dim = len(self.get_board().grid)
+
+        if row == 0:
+            if col == 0:
+                return corner_rotations['top_left'].get(piece_type, [])
+            elif col == board_dim - 1:
+                return corner_rotations['top_right'].get(piece_type, [])
+            else:
+                return border_rotations['top'].get(piece_type, [])
+        elif row == board_dim - 1:
+            if col == 0:
+                return corner_rotations['bottom_left'].get(piece_type, [])
+            elif col == board_dim - 1:
+                return corner_rotations['bottom_right'].get(piece_type, [])
+            else:
+                return border_rotations['bottom'].get(piece_type, [])
+        elif col == 0:
+            return border_rotations['left'].get(piece_type, [])
+        elif col == board_dim - 1:
+            return border_rotations['right'].get(piece_type, [])
+        else:
+            if piece_type == 'L':
+                return ['H', 'V']
+            else:
+                return ['C', 'D', 'B', 'E']
 
 
     def generate_actions(self):
-        """Faz uma interpretação do estado atual do tabuleiro e gera ações possíveis."""
+        """Faz uma interpretação do estado atual do tabuleiro e gera ações possíveis
+        tendo em conta os tipos de peças e as suas posições no tabuleiro."""
         possible_actions = {}
         board = self.get_board()
         board_dim = len(board.grid)
 
-        # Canto superior esquerdo
-        rotation_mappings_first_row_first_col = {'C': ['B', 'D'], 'E': ['B', 'D'], 'B': ['B', 'D'], 'D': ['B', 'D']}
+        # # Canto superior esquerdo
+        # rotations_top_left_corner = ['B', 'D']
 
-        # Primeira linha
-        rotation_mappings_first_row_not_first_last_col = {
-            'F': {'C': ['B', 'E', 'D'], 'E': ['B', 'E', 'D'], 'B': ['B', 'E', 'D'], 'D': ['B', 'E', 'D']},
-            'V': {'C': ['B', 'E'], 'E': ['B', 'E'], 'B': ['B', 'E'], 'D': ['B', 'E']}
-        }
+        # # Primeira linha
+        # rotation_mappings_top_border = {
+        #     'F': ['B', 'E', 'D'],
+        #     'V': ['B', 'E']
+        # }
 
-        # Canto superior direito
-        rotation_mappings_first_row_last_col = {'C': ['B', 'E'], 'E': ['B', 'E'], 'B': ['B', 'E'], 'D': ['B', 'E']}
+        # # Canto superior direito
+        # rotations_top_right_corner = ['B', 'E']
 
-        # Primeira coluna
-        rotation_mappings_not_first_last_row_first_col = {
-            'F': {'C': ['B', 'C', 'D'], 'E': ['B', 'C', 'D'], 'B': ['B', 'C', 'D'], 'D': ['B', 'C', 'D']},
-            'V': {'C': ['B', 'D'], 'E': ['B', 'D'], 'B': ['B', 'D'], 'D': ['B', 'D']}
-        }
+        # # Primeira coluna
+        # rotation_mappings_left_border = {
+        #     'F': ['B', 'C', 'D'],
+        #     'V': ['B', 'D']
+        # }
 
-        # Canto inferior esquerdo
-        rotation_mappings_last_row_first_col = {'C': ['C', 'D'], 'E': ['C', 'D'], 'B': ['C', 'D'], 'D': ['C', 'D']}
+        # # Última coluna
+        # rotation_mappings_right_border = {
+        #     'F': ['B', 'C', 'E'],
+        #     'V': ['C', 'E']
+        # }
 
-        # Última coluna
-        rotation_mappings_not_first_last_row_last_col = {
-            'F': {'C': ['B', 'C', 'E'], 'E': ['B', 'C', 'E'], 'B': ['B', 'C', 'E'], 'D': ['B', 'C', 'E']},
-            'V': {'C': ['C', 'E'], 'E': ['C', 'E'], 'B': ['C', 'E'], 'D': ['C', 'E']}
-        }
+        # # Canto inferior esquerdo
+        # rotations_bottom_left_corner = ['C', 'D']
 
-        # Última linha
-        rotation_mappings_last_row_not_first_last_col = {
-            'F': {'C': ['C', 'E', 'D'], 'E': ['C', 'E', 'D'], 'B': ['C', 'E', 'D'], 'D': ['C', 'E', 'D']},
-            'V': {'C': ['C', 'D'], 'E': ['C', 'D'], 'B': ['C', 'D'], 'D': ['C', 'D']}
-        }
+        # # Última linha
+        # rotation_mappings_bottom_border = {
+        #     'F': ['C', 'E', 'D'],
+        #     'V': ['C', 'D']
+        # }
 
-        # Canto inferior direito
-        rotation_mappings_last_row_last_col = {'C': ['C', 'E'], 'E': ['C', 'E'], 'B': ['C', 'E'], 'D': ['C', 'E']}
+        # # Canto inferior direito
+        # rotations_bottom_right_corner = ['C', 'E']
         
-        for row in range(len(self.board.grid)):
-            for col in range(len(self.board.grid[0])):
-
+        for row in range(board_dim):
+            for col in range(board_dim):
+                
                 piece = self.board.get_value(row, col)
-                current_key = (row, col)
-                current_actions = []
+                if not board.is_permanent(row, col):
+                    piece_type, current_orientation = piece                    
+                    current_key = (row, col)
+                    current_actions = []
+                    new_orientations = self.get_rotations(row, col, piece_type)
+                
+                    if new_orientations:
+                        current_actions.extend([(row, col, self.get_board().calculate_rotation(current_orientation, new_orientation))
+                                                for new_orientation in new_orientations])
+                    if current_actions:
+                        possible_actions[current_key] = [current_actions]
+                        
                 #print("Coordenadas: (", row, ",", col, ") Peça atual: ", piece)
 
-                if board.is_permanent(row, col):
-                    pass
-                elif row == 0 and col == 0 and piece[0] == "F":
-                    #print("elif 1")
-                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
-                                            for new_orientation in rotation_mappings_first_row_first_col[piece[1]]])
-                elif row == 0 and col != 0 and col != board_dim - 1:
-                    #print("elif 2")
-                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
-                                            for new_orientation in rotation_mappings_first_row_not_first_last_col[piece[0]][piece[1]]])
-                elif row == 0 and col == board_dim - 1 and piece[0] == "F":
-                    #print("elif 3")
-                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
-                                            for new_orientation in rotation_mappings_first_row_last_col[piece[1]]])
-                elif row != 0 and row != board_dim - 1 and col == 0:
-                    #print("elif 4")
-                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
-                                            for new_orientation in rotation_mappings_not_first_last_row_first_col[piece[0]][piece[1]]])
-                elif row == board_dim - 1 and col == 0 and piece[0] == "F":
-                    #print("elif 5")
-                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
-                                            for new_orientation in rotation_mappings_last_row_first_col[piece[1]]])
-                elif row != 0 and row != board_dim - 1 and col == board_dim - 1:
-                    #print("elif 6")
-                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
-                                            for new_orientation in rotation_mappings_not_first_last_row_last_col[piece[0]][piece[1]]])
-                elif row == board_dim - 1 and col != 0 and col != board_dim - 1:
-                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
-                                            for new_orientation in rotation_mappings_last_row_not_first_last_col[piece[0]][piece[1]]])
-                elif row == board_dim - 1 and col == board_dim - 1 and piece[0] == "F":
-                    #print("elif 7")
-                    current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
-                                            for new_orientation in rotation_mappings_last_row_last_col[piece[1]]])
-                else:
-                    #print("else")
-                    # LIMITAR PEÇAS L...
-                    if piece[0] == "L":
-                        current_actions.extend([(row, col, rotation) for rotation in range(0, 2)])  # Add 2 possible rotations
-                    else:
-                        current_actions.extend([(row, col, rotation) for rotation in range(0, 4)])  # Add 4 (all) possible rotations
+                # elif row == 0 and col == 0 and piece[0] == "F":
+                #     #print("elif 1")
+                #     current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                #                             for new_orientation in rotations_top_left_corner])
+                # elif row == 0 and col != 0 and col != board_dim - 1:
+                #     #print("elif 2")
+                #     current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                #                             for new_orientation in rotation_mappings_top_border[piece[0]]])
+                # elif row == 0 and col == board_dim - 1 and piece[0] == "F":
+                #     #print("elif 3")
+                #     current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                #                             for new_orientation in rotations_top_right_corner])
+                # elif row != 0 and row != board_dim - 1 and col == 0:
+                #     #print("elif 4")
+                #     current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                #                             for new_orientation in rotation_mappings_left_border[piece[0]]])
+                # elif row != 0 and row != board_dim - 1 and col == board_dim - 1:
+                #     #print("elif 6")
+                #     current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                #                             for new_orientation in rotation_mappings_right_border[piece[0]]])
+                # elif row == board_dim - 1 and col == 0 and piece[0] == "F":
+                #     #print("elif 5")
+                #     current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                #                             for new_orientation in rotations_bottom_left_corner])
+                # elif row == board_dim - 1 and col != 0 and col != board_dim - 1:
+                #     current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                #                             for new_orientation in rotation_mappings_bottom_border[piece[0]]])
+                # elif row == board_dim - 1 and col == board_dim - 1 and piece[0] == "F":
+                #     #print("elif 7")
+                #     current_actions.extend([(row, col, self.board.calculate_rotation(piece[1], new_orientation))
+                #                             for new_orientation in rotations_bottom_right_corner])
+                # else:
+                #     #print("else")
+                #     # Adicionar as rotações das peças do tipo L sem redundância
+                #     if piece[0] == "L":
+                #         current_actions.extend([(row, col, rotation) for rotation in range(0, 2)])
 
-                if current_actions:
-                    possible_actions[current_key] = [current_actions]
+                #     # As restantes peças têm todas as rotações possíveis
+                #     else:
+                #         current_actions.extend([(row, col, rotation) for rotation in range(0, 4)])
+
+                
 
         return self.check_neighbors(possible_actions)
-
-
 
 class Board:
     """Representação interna de um tabuleiro de PipeMania."""
@@ -375,22 +431,24 @@ class Board:
             return self.grid[row][col]
         else:
             return None
-
+    
+    # NAO ESTAMOS A USAR ESTAS DUAS FUNÇÕES, REMOVEMOS????????????
     def adjacent_vertical_values(self, row: int, col: int) -> Tuple[str,str]:
         """Devolve os valores imediatamente acima e abaixo,
-        respectivamente."""
+        respetivamente."""
         if self.is_grid_index(row, col):
             return self.get_value(row - 1, col), self.get_value(row + 1, col)
         else:
-            return None # ou temos de pôr (None, None) ? caso a peça não exista
+            return None
 
     def adjacent_horizontal_values(self, row: int, col: int) -> Tuple[str,str]:
         """Devolve os valores imediatamente à esquerda e à direita,
-        respectivamente."""
+        respetivamente."""
         if self.is_grid_index(row, col):
             return self.get_value(row, col - 1), self.get_value(row, col + 1)
         else:
-            return None # ou temos de pôr (None, None) ? caso a peça não exista
+            return None
+    #############################################################
 
     @staticmethod
     def parse_instance():
@@ -408,11 +466,13 @@ class Board:
         return Board(grid)
 
     def get_pipes(self, piece_type: chr) -> dict:
-        """Retorna o dicionário das saídas de água da peça especificada."""
+        """Retorna o dicionário das saídas de água da peça especificada.
+        Posição a 1: tem saída de água.
+        Posição a 0: não tem saída de água."""
 
         water_pipes = {
             # [Cima, Direita, Baixo, Esquerda]
-            "F": {"FC": [1, 0, 0, 0],
+            "F": {"FC": [1, 0, 0, 0], # FC só tem saída de água para cima
                   "FB": [0, 0, 1, 0],
                   "FE": [0, 0, 0, 1],
                   "FD": [0, 1, 0, 0]},
@@ -446,22 +506,27 @@ class Board:
     
 
     def find_matching_pieces(self, current_piece: str, piece_water_pipes: List[int]):
-        """"""
+        """Devolve as configurações da peça current_piece que
+        são compatíveis com as saídas de água em piece_water_pipes."""
         
         #print(self.get_pipes(current_piece[0]))
+
+        # Obtém as configurações possíveis para as saídas de água da current_piece,
+        # incluindo as diferentes rotações da peça
         water_pipes_dict = self.get_pipes(current_piece[0])
 
-        # Cria uma cópia das chaves para mais tarde iterar sobre as mesmas
+        # Vetor que guarda as configurações das peças incompatíveis
         pieces_to_remove = []
 
         for piece, water_pipes in water_pipes_dict.items():
             #print(current_piece)
             # print(piece_water_pipes)
             # print(water_pipes)
+            # Compara as saídas de água dos dois vetores
             for i in range(0,4):
-                if piece_water_pipes[i] == -1:
+                if piece_water_pipes[i] == -1:  # saída de água desconhecida
                     continue
-                if water_pipes[i] != piece_water_pipes[i]:
+                if water_pipes[i] != piece_water_pipes[i]:  # incompatibilidade encontrada
                     pieces_to_remove.append(piece)
                     break
 
@@ -469,7 +534,7 @@ class Board:
         # print(water_pipes_dict.keys())
 
 
-        # Remove as peças que devem ser retiradas
+        # Remove as rotações da peça para as quais foram encontradas incompatibilidades
         for piece in pieces_to_remove:
             water_pipes_dict.pop(piece)
 
@@ -477,11 +542,9 @@ class Board:
 
         return list(water_pipes_dict.keys())
 
-
     
     def check_connections(self, current_piece: List[int], other_piece: List[int], comparison: int) -> int:
-        """Compara as saídas de água da peça especificada com a peça à esquerda se left_comparison for True,
-        caso contrário compara com a peça acima. 
+        """Compara as saídas de água da peça especificada com a peça adjacente 
         1 -> Peça esquerda
         2 -> Peça cima
         3 -> Peça direita
@@ -514,8 +577,6 @@ class Board:
                 return 1
 
         return 2
-
-
     
     
     def compare_piece_connections(self, current_piece: List[int], left_piece: List[int], above_piece: List[int]) -> bool:
@@ -549,18 +610,15 @@ class Board:
                
 
     def make_piece_permanent(self, row, col):
-        """Torna a configuração da peça permanente no determinado tabuleiro."""
+        """Torna a configuração da peça permanente no tabuleiro."""
         piece = self.get_value(row, col)
         self.set_value(row, col, piece.lower())  # Altera a peça para letras minúsculas 
                                                  # para assinalar que está permanente
 
     def is_permanent(self, row, col):
-        """Verifica se a peça na determinada posição já está na sua configuração permanente."""
+        """Verifica se a peça na posição dada já está permanente."""
         piece = self.get_value(row, col)
         return piece.islower()
-
-    
-
 
     def calculate_rotation(self, start_orient: str, end_orient: str) -> int:
         """Calcula o número de rotações no sentido anti-horário necessárias para 
@@ -575,44 +633,38 @@ class Board:
         return anticlockwise_rotations
     
     def rotate_piece_to_config(self, row: int, col: int, desired_config: str):
-        """Rotaciona a peça na posição (row, col) para a configuração desejada."""
+        """Rotaciona a peça na posição dada para a configuração desejada."""
         piece = self.get_value(row, col)
-        new_piece = piece[0] + desired_config[1] # Creates a new piece with the desired configuration
+        new_piece = piece[0] + desired_config[1] # Cria uma nova peça com a configuração desejada
         self.set_value(row, col, new_piece)         
 
-
     def rotate_piece(self, row: int, col: int, rotation: int):
-        """Roda a peça na determinada posição com base no valor da rotação."""
+        """Roda a peça na posição dada com base no valor de rotation."""
         while rotation != 0:
             self.turn_left(row, col)
             rotation -= 1
         
-
     def turn_left(self, row: int, col: int):
-        """Roda a peça na posição especificada para a esquerda (sentido anti-horário)."""
+        """Roda a peça na posição especificada para a esquerda 
+        (90º no sentido anti-horário)."""
         piece = self.get_value(row, col)
         orientations = {'C': 'E', 'E': 'B', 'B': 'D', 'D': 'C', 'H': 'V', 'V': 'H'}
         new_orientation = orientations[piece[1]]
         self.set_value(row, col, piece[0] + new_orientation)
-
     
+    # REMOVER???????????????
     def print_grid_debug(self):
         for row in self.grid:
             print(' '.join(row))
 
-
     def print_grid(self):
+        """Imprime as nxn peças da grelha deste board."""
         for row in self.grid:
-            # Converts each piece to uppercase before printing
+                            # Converte cada peça para maiúsculas antes de imprimir
             print('\t'.join(piece.upper() for piece in row))
 
 
-    # TODO: outros metodos da classe
-
-
 class PipeMania(Problem):
-
-    # Pomos @Override???
 
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
@@ -622,6 +674,7 @@ class PipeMania(Problem):
         """Devolve o estado inicial."""
         return self.initial
     
+    # NAO DA MESMO PARA MELHORAR ESTA?
     def change_borders(self):
         """Faz uma interpretação do estado atual do tabuleiro e faz alterações no limite do tabuleiro."""
 
@@ -709,14 +762,16 @@ class PipeMania(Problem):
                 left_piece = board.get_value(row, col - 1)
                 above_piece = board.get_value(row - 1, col)
 
+                # Verifica que a peça atual tem ligações compatíveis com as peças
+                # à esquerda e acima se existirem
                 if not board.compare_piece_connections(board.get_water_pipes(current_piece), 
                                                        board.get_water_pipes(left_piece), 
                                                        board.get_water_pipes(above_piece)):
                     return False
         
-        # Creates a graph to check if there are subsets of water connected pipes
+        # Cria um grafo para verificar que não existem subconjuntos de canalizações
         graph = Graph()
-
+        # JUNTAR ESTE FOR COM O DE CIMA?? PARA N REPETIR CÓDIGO OU N VALE A PENA
         for row in range(board_dim):
             for col in range(board_dim):
                 current_piece = board.get_value(row, col)
@@ -727,20 +782,25 @@ class PipeMania(Problem):
                 left_neighbor_id = row * board_dim + col - 1
                 above_neighbor_id = (row - 1) * board_dim + col
 
+                # Acrescenta um arco ao grafo se existir ligação entre a peça 
+                # atual e a peça à esquerda
                 if left_piece is not None and (board.check_connections(board.get_water_pipes(current_piece),
                                                                       board.get_water_pipes(left_piece), 1) == 1):
                     graph.add_edge(node_id, left_neighbor_id)
                 
+                # Acrescenta um arco ao grafo se existir ligação entre a peça 
+                # atual e a peça acima
                 if above_piece is not None and (board.check_connections(board.get_water_pipes(current_piece),
                                                                        board.get_water_pipes(above_piece), 2) == 1):
                     graph.add_edge(node_id, above_neighbor_id)
         
 
-        if graph.subgraph_count() > 1:
+        if graph.subgraph_count() > 1:  # caso de rejeição
             return False
 
         return True
-
+    
+    # REMOVER?????????????????
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
         # TODO
