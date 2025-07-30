@@ -1,10 +1,7 @@
-How to utilize the visualizer:
+# Artificial Intelligence course at IST
 
-Run on the command line: pip install Pillow numpy
+Goal: Develop a Python program that solves a PIPEMANIA puzzle by rotating pipe pieces on a grid to form a fully connected, leak-free pipeline using AI search techniques.
 
-Have the visualizer.py and the images inside the same folder 
-(for example: your project folder could have  pipe.py, search.py, test pipe 1-9, ..., visualizer.py, images)
+Grades:
 
-Run the command : python3 visualizer.py '<path to grid file>' ( for example,  python3 .\visualizer.py 'test pipe 1-9\test-01.out')
-
-You should see a Grid_Image.png on your project folder!
+Project - 15/15
